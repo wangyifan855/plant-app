@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GraftCheck 管理后台</title>
+<style>
+  :root {
+    --green: #2f9e44;
+    --green-d: #2b8a3e;
+    --bg: #f4f7f5;
+    --card: #ffffff;
+    --line: #e6ebe8;
+    --text: #1f2d27;
+    --muted: #6b7b73;
+    --danger: #e03131;
+    --warn: #f08c00;
+  }
+  * { box-sizing: border-box; }
+  /* 屏蔽 Edge/IE 原生密码显示图标，避免和自定义小眼睛重叠 */
+  input[type="password"]::-ms-reveal,
+  input[type="password"]::-ms-clear { display: none; }
+  body {
+    margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  .wrap { max-width: none; margin: 0; padding: 36px 56px 60px; }
+  header.bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+  header.bar h1 { font-size: 34px; margin: 0; display: flex; align-items: center; gap: 12px; }
+  .logo { width: 44px; height: 44px; border-radius: 11px; background: var(--green); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; }
+  .btn { border: none; border-radius: 10px; padding: 16px 32px; font-size: 24px; cursor: pointer; transition: .15s; }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { background: var(--green-d); }
+  .btn-ghost { background: #eef2f0; color: var(--text); }
+  .btn-ghost:hover { background: #e2e8e4; }
+  .btn-danger { background: #fff0f0; color: var(--danger); border: 1px solid #ffc9c9; }
+  .btn-danger:hover { background: #ffe3e3; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+
+  /* 登录 */
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background-color: var(--bg);
+    background-image: linear-gradient(rgba(244, 247, 245, 0.15), rgba(244, 247, 245, 0.15)), url("bg.jpg");
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+  }
+  .login { width: clamp(730px, 57vw, 1310px); padding: clamp(60px, 5.75vw, 111px) clamp(66px, 6.5vw, 125px) !important; }
+  .login .logo { width: 76px; height: 76px; font-size: 38px; border-radius: 18px; margin-bottom: 28px !important; }
+  .login h2 { margin: 0 0 13px; font-size: clamp(38px, 3.2vw, 62px); }
+  .login p.sub { margin: 0 0 45px; color: var(--muted); font-size: clamp(21px, 1.7vw, 31px); }
+  .field { margin-bottom: 33px; }
+  .field label { display: block; font-size: clamp(21px, 1.7vw, 31px); color: var(--muted); margin-bottom: 15px; }
+  .input-shell { position: relative; }
+  .field input { width: 100%; padding: 22px 81px 22px 25px; border: 1px solid var(--line); border-radius: 16px; font-size: clamp(23px, 1.9vw, 34px); outline: none; }
+  .field input:focus { border-color: var(--green); }
+  .eye { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 62px; height: 62px; border: none; background: transparent; cursor: pointer; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+  .eye:hover { background: #f0f4f1; color: var(--green-d); }
+  .eye svg { width: 35px; height: 35px; }
+  .err { color: var(--danger); font-size: clamp(19px, 1.55vw, 28px); min-height: 31px; margin-top: 12px; }
+  .login .btn { width: 100%; padding: 25px; font-size: clamp(24px, 2vw, 36px); border-radius: 14px; }
+
+  /* 统计卡 */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-bottom: 32px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 34px 36px; }
+  .stat .num { font-size: clamp(48px, 3.6vw, 72px); font-weight: 700; color: var(--green-d); }
+  .stat .lbl { font-size: clamp(24px, 1.7vw, 34px); color: var(--muted); margin-top: 10px; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 12px; margin-bottom: 20px; }
+  .tab { padding: 16px 36px; border-radius: 10px; background: #eef2f0; color: var(--muted); cursor: pointer; font-size: 24px; border: 1px solid transparent; }
+  .tab.active { background: #fff; color: var(--green-d); border-color: var(--line); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 26px; }
+  th, td { text-align: left; padding: 24px 26px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 23px; }
+  tr:last-child td { border-bottom: none; }
+  td .btn + .btn { margin-left: 16px; }
+  .pill { display: inline-block; padding: 6px 18px; border-radius: 999px; font-size: 21px; }
+  .pill-admin { background: #fff3bf; color: #8a6d00; }
+  .pill-user { background: #e9f5ec; color: var(--green-d); }
+  .muted { color: var(--muted); }
+  .empty { padding: 40px; text-align: center; color: var(--muted); font-size: 20px; }
+  .hidden { display: none !important; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1f2d27; color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 17px; opacity: 0; transition: .25s; pointer-events: none; z-index: 50; }
+  .toast.show { opacity: 1; }
+
+  /* 账号设置弹层 */
+  .modal-mask { position: fixed; inset: 0; background: rgba(15, 25, 20, .45); display: flex; align-items: center; justify-content: center; z-index: 40; }
+  .modal-mask.high { z-index: 60; }
+  .modal-card { width: min(900px, 92vw); max-height: 90vh; overflow: auto; padding: 44px 52px; }
+  .modal-card h3 { margin: 0 0 10px; font-size: clamp(30px, 2.4vw, 40px); }
+  .modal-card .modal-sub { margin: 0 0 26px; color: var(--muted); font-size: clamp(19px, 1.55vw, 26px); line-height: 1.6; }
+  .acct-sec { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; }
+  .acct-sec:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  .acct-sec h4 { margin: 0 0 14px; font-size: 20px; color: var(--green-d); }
+  .modal-card .field { margin-bottom: 16px; }
+  .modal-card .field label { display: block; font-size: clamp(19px, 1.6vw, 27px); color: var(--muted); margin-bottom: 10px; }
+  .modal-card .field input { width: 100%; padding: 16px 60px 16px 18px; border: 1px solid var(--line); border-radius: 10px; font-size: clamp(21px, 1.8vw, 30px); outline: none; }
+  .modal-card .field input:focus { border-color: var(--green); }
+  .modal-card .eye { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border: none; background: transparent; cursor: pointer; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+  .modal-card .eye:hover { background: #f0f4f1; color: var(--green-d); }
+  .modal-card .eye svg { width: 22px; height: 22px; }
+  .modal-card .err { color: var(--danger); font-size: clamp(17px, 1.4vw, 24px); min-height: 24px; margin-top: 8px; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div id="loginView" class="login-wrap">
+  <div class="card login">
+    <div class="logo" style="margin-bottom:12px;">🌿</div>
+    <h2>管理后台</h2>
+    <p class="sub">仅限 admin 账号登录</p>
+    <div class="field">
+      <label>用户名</label>
+      <input id="username" type="text" placeholder="admin" autocomplete="username" />
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <div class="input-shell">
+        <input id="password" type="password" placeholder="请输入密码" autocomplete="current-password" />
+        <button type="button" class="eye" id="eyeBtn" title="显示/隐藏密码" aria-label="显示或隐藏密码">
+          <svg id="eyeOpen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <svg id="eyeClosed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="err" id="loginErr"></div>
+    <button class="btn btn-green" id="loginBtn">登录</button>
+  </div>
+</div>
+
+<!-- 后台主界面 -->
+<div id="dashView" class="wrap hidden">
+  <header class="bar">
+    <h1><span class="logo">🌿</span> GraftCheck 管理后台</h1>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-ghost" id="acctBtn">账号设置</button>
+      <button class="btn btn-ghost" id="logoutBtn">退出登录</button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="users">用户管理</div>
+    <div class="tab" data-tab="posts">帖子管理</div>
+  </div>
+
+  <div class="card" id="usersPanel">
+    <table>
+      <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>昵称</th><th>发帖</th><th>花园株</th><th>操作</th></tr></thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+    <div class="empty hidden" id="usersEmpty">暂无用户</div>
+  </div>
+
+  <div class="card hidden" id="postsPanel">
+    <table>
+      <thead><tr><th>ID</th><th>标题</th><th>作者</th><th>点赞</th><th>评论</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="postsBody"></tbody>
+    </table>
+    <div class="empty hidden" id="postsEmpty">暂无帖子</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 账号设置弹层 -->
+<div id="acctModal" class="modal-mask hidden">
+  <div class="card modal-card">
+    <h3>账号设置</h3>
+    <p class="modal-sub">当前登录账号：<b id="acctWho">—</b></p>
+
+    <div class="acct-sec">
+      <h4>修改用户名</h4>
+      <div class="field">
+        <label>新用户名</label>
+        <input id="newUsername" type="text" placeholder="输入新的用户名" maxlength="32" />
+      </div>
+      <div class="err" id="unameErr"></div>
+      <button class="btn btn-green" id="saveUnameBtn">保存用户名</button>
+    </div>
+
+    <div class="acct-sec">
+      <h4>修改密码</h4>
+      <div class="field">
+        <label>旧密码</label>
+        <div class="input-shell">
+          <input id="oldPw" type="password" placeholder="输入当前密码" autocomplete="current-password" />
+          <button type="button" class="eye" data-eye="oldPw" title="显示/隐藏密码">
+            <svg class="eo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ec" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label>新密码</label>
+        <div class="input-shell">
+          <input id="newPw" type="password" placeholder="至少 4 位" autocomplete="new-password" />
+          <button type="button" class="eye" data-eye="newPw" title="显示/隐藏密码">
+            <svg class="eo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ec" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label>确认新密码</label>
+        <div class="input-shell">
+          <input id="newPw2" type="password" placeholder="再输一遍新密码" autocomplete="new-password" />
+          <button type="button" class="eye" data-eye="newPw2" title="显示/隐藏密码">
+            <svg class="eo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="ec" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="err" id="pwErr"></div>
+      <button class="btn btn-green" id="savePwBtn">保存密码</button>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="acctCloseBtn">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 二次确认弹层 -->
+<div id="confirmModal" class="modal-mask high hidden">
+  <div class="card modal-card" style="width:min(500px, 90vw);">
+    <h3>确认操作</h3>
+    <p class="modal-sub" id="confirmMsg" style="font-size:18px; color:var(--text); line-height:1.6;">—</p>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="confirmCancelBtn">取消</button>
+      <button class="btn btn-green" id="confirmOkBtn">确认保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 下架原因弹层 -->
+<div id="takedownModal" class="modal-mask high hidden">
+  <div class="card modal-card" style="width:min(700px, 92vw);">
+    <h3>下架帖子</h3>
+    <p class="modal-sub">下架后帖子将不再对外展示，作者会收到带原因的通知；可随时恢复。</p>
+    <div class="field">
+      <label>下架原因（必填，将通知作者）</label>
+      <textarea id="tdReason" rows="3" maxlength="200"
+        placeholder="例如：内容与社区规范不符"
+        style="width:100%;box-sizing:border-box;font-size:clamp(21px, 1.8vw, 30px);padding:14px 18px;border:1px solid #d8dee6;border-radius:10px;resize:vertical;font-family:inherit;"></textarea>
+    </div>
+    <div class="err" id="tdErr"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="tdCancelBtn">取消</button>
+      <button class="btn btn-green" id="tdOkBtn">确认下架</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = "gc_admin_token";
+let meId = null;   // 当前登录管理员自己的用户 ID
+const $ = (id) => document.getElementById(id);
+
+// 任何未捕获的脚本错误都显眼地弹出来，避免“点了没反应也没提示”的静默失败
+window.addEventListener("error", (e) => {
+  const msg = (e && e.message) ? e.message : "页面脚本出错";
+  const box = $("loginErr");
+  const t = $("toast");
+  if (box && !$("loginView").classList.contains("hidden")) box.textContent = "脚本错误：" + msg;
+  else if (t) { t.textContent = "脚本错误：" + msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 3000); }
+});
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+async function api(path, opts = {}) {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const headers = Object.assign({}, opts.headers || {});
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  if (res.status === 401 || res.status === 403) {
+    // 没权限就退回登录
+    localStorage.removeItem(TOKEN_KEY);
+    showLogin();
+    throw new Error("登录已失效，请重新登录");
+  }
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const d = (await res.json()).detail;
+      detail = typeof d === "string" ? d : (d ? JSON.stringify(d) : "");
+    } catch (e) {}
+    throw new Error(detail || ("请求失败 (" + res.status + ")"));
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function showLogin() {
+  $("loginView").classList.remove("hidden");
+  $("dashView").classList.add("hidden");
+  // 登录失效时如果账号设置弹层还开着，一并关掉，避免用户在弹层里反复点保存都 401
+  $("acctModal").classList.add("hidden");
+  $("confirmModal").classList.add("hidden");
+  $("takedownModal").classList.add("hidden");
+  // 退登/失效跳回时清空登录框，避免旧账号密码残留
+  const u = $("username"), p = $("password");
+  if (u) u.value = "";
+  if (p) { p.value = ""; p.type = "password"; }
+  const err = $("loginErr");
+  if (err) err.textContent = "";
+  const eo = $("eyeOpen"), ec = $("eyeClosed");
+  if (eo) eo.style.display = "";
+  if (ec) ec.style.display = "none";
+}
+function showDash() {
+  $("loginView").classList.add("hidden");
+  $("dashView").classList.remove("hidden");
+  loadAll();
+}
+
+async function loadAll() {
+  try {
+    const [stats, users, posts] = await Promise.all([
+      api("/api/admin/stats"),
+      api("/api/admin/users"),
+      api("/api/admin/posts"),
+    ]);
+    // 当前管理员自己的 ID，用于隐藏“改自己角色”按钮
+    try { meId = (await api("/auth/me")).id; } catch (e) {}
+    renderStats(stats);
+    renderUsers(users);
+    renderPosts(posts);
+  } catch (e) {
+    // api() 已处理 401/403 跳转
+  }
+}
+
+function renderStats(s) {
+  const items = [
+    ["用户", s.users], ["帖子", s.posts], ["评论", s.comments],
+    ["诊断记录", s.diagnoses], ["关注关系", s.follows],
+    ["花园植物", s.garden_plants], ["追踪任务", s.tracks], ["追踪记录", s.track_records],
+  ];
+  $("stats").innerHTML = items.map(([lbl, num]) =>
+    `<div class="stat"><div class="num">${num}</div><div class="lbl">${lbl}</div></div>`
+  ).join("");
+}
+
+function renderUsers(users) {
+  const body = $("usersBody");
+  $("usersEmpty").classList.toggle("hidden", users.length > 0);
+  body.innerHTML = users.map(u => {
+    const rolePill = u.role === "admin"
+      ? `<span class="pill pill-admin">管理员</span>`
+      : `<span class="pill pill-user">普通用户</span>`;
+    // 角色切换：不能操作自己的账号（避免把自己降级后无人管理）
+    const roleBtn = u.id === meId
+      ? ``
+      : u.role === "admin"
+        ? `<button class="btn btn-ghost" data-set-role="user" data-uid="${u.id}">取消管理员</button>`
+        : `<button class="btn btn-ghost" data-set-role="admin" data-uid="${u.id}">设为管理员</button>`;
+    const delBtn = u.role === "admin"
+      ? (u.id === meId ? `<span class="muted">—</span>` : roleBtn)
+      : `${roleBtn}<button class="btn btn-danger" data-del-user="${u.id}">删除</button>`;
+    return `<tr>
+      <td>${u.id}</td>
+      <td>${esc(u.username)}</td>
+      <td>${rolePill}</td>
+      <td>${esc(u.nickname || "—")}</td>
+      <td>${u.post_count}</td>
+      <td>${u.garden_count}</td>
+      <td>${delBtn}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderPosts(posts) {
+  const body = $("postsBody");
+  $("postsEmpty").classList.toggle("hidden", posts.length > 0);
+  body.innerHTML = posts.map(p => {
+    const author = p.author_username ? esc(p.author_username) : '<span class="muted">匿名/游客</span>';
+    const takedown = p.status === "takedown";
+    const statusCell = takedown
+      ? `<span class="pill" style="background:#fdecea;color:#c0392b;">已下架</span>`
+      : `<span class="pill" style="background:#e8f5e9;color:#2e7d32;">发布中</span>`;
+    // 发布中 → 下架；已下架 → 恢复 / 删除
+    const actions = takedown
+      ? `<button class="btn btn-ghost" data-restore-post="${p.id}">恢复</button>
+         <button class="btn btn-danger" data-del-post="${p.id}">删除</button>`
+      : `<button class="btn" style="background:#fff3e0;color:#e65100;" data-takedown-post="${p.id}">下架</button>`;
+    return `<tr>
+      <td>${p.id}</td>
+      <td>${esc(p.title)}</td>
+      <td>${author}</td>
+      <td>${p.likes}</td>
+      <td>${p.comment_count}</td>
+      <td>${statusCell}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join("");
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// 事件绑定
+// 密码可见性切换（常驻小眼睛）——包一层，避免异常连累登录按钮绑定
+try {
+  if ($("eyeBtn")) {
+    $("eyeBtn").addEventListener("click", () => {
+      const pw = $("password");
+      const show = pw.type === "password";
+      pw.type = show ? "text" : "password";
+      $("eyeOpen").style.display = show ? "none" : "";
+      $("eyeClosed").style.display = show ? "" : "none";
+    });
+  }
+} catch (e) {}
+
+$("loginBtn").addEventListener("click", async () => {
+  const username = $("username").value.trim();
+  const password = $("password").value;
+  if (!username && !password) { $("loginErr").textContent = "请输入用户名和密码"; return; }
+  if (!username) { $("loginErr").textContent = "请输入用户名"; return; }
+  if (!password) { $("loginErr").textContent = "请输入密码"; return; }
+  $("loginErr").textContent = "";
+  $("loginBtn").disabled = true;
+  try {
+    const form = new URLSearchParams();
+    form.set("username", username);
+    form.set("password", password);
+    const r = await fetch("/auth/login", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: form });
+    if (!r.ok) {
+      let d = "";
+      try {
+        const j = await r.json();
+        d = typeof j.detail === "string" ? j.detail : (j.detail ? JSON.stringify(j.detail) : "");
+      } catch (e) {}
+      throw new Error(d || "登录失败");
+    }
+    const data = await r.json();
+    if (data.role && data.role !== "admin" && !data.token) {}
+    localStorage.setItem(TOKEN_KEY, data.token);
+    // 校验是否为管理员
+    try {
+      await api("/api/admin/stats");
+    } catch (e) {
+      localStorage.removeItem(TOKEN_KEY);
+      throw new Error("该账号不是管理员");
+    }
+    showDash();
+  } catch (e) {
+    $("loginErr").textContent = e.message;
+  } finally {
+    $("loginBtn").disabled = false;
+  }
+});
+
+$("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem(TOKEN_KEY);
+  showLogin();
+});
+
+// ---------- 账号设置（改用户名 / 改密码） ----------
+// 弹层内常驻小眼睛
+document.querySelectorAll(".modal-card .eye").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const inp = $(btn.dataset.eye);
+    const show = inp.type === "password";
+    inp.type = show ? "text" : "password";
+    btn.querySelector(".eo").style.display = show ? "none" : "";
+    btn.querySelector(".ec").style.display = show ? "" : "none";
+  });
+});
+
+$("acctBtn").addEventListener("click", async () => {
+  $("unameErr").textContent = "";
+  $("pwErr").textContent = "";
+  $("acctModal").classList.remove("hidden");
+  try {
+    const me = await api("/auth/me");
+    $("acctWho").textContent = me.username || "—";
+  } catch (e) {
+    $("acctWho").textContent = "—";
+  }
+});
+
+$("acctCloseBtn").addEventListener("click", () => {
+  $("acctModal").classList.add("hidden");
+  ["newUsername", "oldPw", "newPw", "newPw2"].forEach(id => { $(id).value = ""; });
+});
+
+// ---- 二次确认弹层 ----
+let confirmCb = null;
+function askConfirm(msg, cb) {
+  $("confirmMsg").textContent = msg;
+  confirmCb = cb;
+  $("confirmModal").classList.remove("hidden");
+}
+$("confirmCancelBtn").addEventListener("click", () => {
+  $("confirmModal").classList.add("hidden");
+  confirmCb = null;
+});
+$("confirmOkBtn").addEventListener("click", () => {
+  $("confirmModal").classList.add("hidden");
+  const cb = confirmCb;
+  confirmCb = null;
+  if (cb) cb();
+});
+
+$("saveUnameBtn").addEventListener("click", () => {
+  const name = $("newUsername").value.trim();
+  $("unameErr").textContent = "";
+  if (!name) { $("unameErr").textContent = "请输入新用户名"; return; }
+  if (name === $("acctWho").textContent) { $("unameErr").textContent = "新用户名和原来一样"; return; }
+  askConfirm("确定要把用户名从「" + $("acctWho").textContent + "」改成「" + name + "」吗？", () => doSaveUname(name));
+});
+
+async function doSaveUname(name) {
+  $("saveUnameBtn").disabled = true;
+  try {
+    const form = new URLSearchParams();
+    form.set("new_username", name);
+    const r = await api("/auth/change-username", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form,
+    });
+    $("acctWho").textContent = r.username;
+    $("newUsername").value = "";
+    toast("用户名已修改为 " + r.username);
+  } catch (e) {
+    $("unameErr").textContent = e.message;
+  } finally {
+    $("saveUnameBtn").disabled = false;
+  }
+}
+
+$("savePwBtn").addEventListener("click", () => {
+  const oldPw = $("oldPw").value;
+  const newPw = $("newPw").value;
+  const newPw2 = $("newPw2").value;
+  $("pwErr").textContent = "";
+  if (!oldPw) { $("pwErr").textContent = "请输入旧密码"; return; }
+  if (!newPw) { $("pwErr").textContent = "请输入新密码"; return; }
+  if (newPw.length < 4) { $("pwErr").textContent = "新密码至少 4 位"; return; }
+  if (newPw !== newPw2) { $("pwErr").textContent = "两次输入的新密码不一致"; return; }
+  askConfirm("确定要修改密码吗？修改后下次登录请使用新密码。", () => doSavePw(oldPw, newPw));
+});
+
+async function doSavePw(oldPw, newPw) {
+  $("savePwBtn").disabled = true;
+  try {
+    const form = new URLSearchParams();
+    form.set("old_password", oldPw);
+    form.set("new_password", newPw);
+    await api("/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form,
+    });
+    ["oldPw", "newPw", "newPw2"].forEach(id => { $(id).value = ""; });
+    toast("密码已修改");
+  } catch (e) {
+    $("pwErr").textContent = e.message;
+  } finally {
+    $("savePwBtn").disabled = false;
+  }
+}
+
+// 输入时清掉旧红字，避免上一轮的报错挂在界面上造成误解
+$("newUsername").addEventListener("input", () => { $("unameErr").textContent = ""; });
+["oldPw", "newPw", "newPw2"].forEach(id => {
+  $(id).addEventListener("input", () => { $("pwErr").textContent = ""; });
+});
+
+// tab 切换
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    const tab = t.dataset.tab;
+    $("usersPanel").classList.toggle("hidden", tab !== "users");
+    $("postsPanel").classList.toggle("hidden", tab !== "posts");
+  });
+});
+
+// 删除用户（事件委托）
+$("usersBody").addEventListener("click", async (e) => {
+  const delId = e.target.getAttribute("data-del-user");
+  if (delId) {
+    if (!confirm("确定删除该用户及其全部数据（花园/帖子/关注等）？此操作不可撤销。")) return;
+    try {
+      await api("/api/admin/users/" + delId, { method: "DELETE" });
+      toast("已删除用户 #" + delId);
+      loadAll();
+    } catch (err) { toast(err.message); }
+    return;
+  }
+  // 授予 / 收回管理员权限
+  const uid = e.target.getAttribute("data-uid");
+  const role = e.target.getAttribute("data-set-role");
+  if (!uid || !role) return;
+  const isGrant = role === "admin";
+  askConfirm(
+    isGrant
+      ? "确定把用户 #" + uid + " 设为管理员吗？他将可以管理所有用户和帖子。"
+      : "确定收回用户 #" + uid + " 的管理员权限吗？",
+    async () => {
+      try {
+        await api("/api/admin/users/" + uid + "/role", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ role }),
+        });
+        toast(isGrant ? "已设为管理员" : "已收回管理员权限");
+        loadAll();
+      } catch (err) { toast(err.message); }
+    }
+  );
+});
+
+// 删除帖子（事件委托）
+$("postsBody").addEventListener("click", async (e) => {
+  const delId = e.target.getAttribute("data-del-post");
+  if (delId) {
+    if (!confirm("确定删除该帖子及其评论/点赞/收藏？此操作不可撤销。")) return;
+    try {
+      await api("/api/admin/posts/" + delId, { method: "DELETE" });
+      toast("已删除帖子 #" + delId);
+      loadAll();
+    } catch (err) { toast(err.message); }
+    return;
+  }
+  // 下架：弹层填原因
+  const tdId = e.target.getAttribute("data-takedown-post");
+  if (tdId) {
+    $("tdReason").value = "";
+    $("tdErr").textContent = "";
+    $("takedownModal").classList.remove("hidden");
+    $("takedownModal").dataset.pid = tdId;
+    $("tdReason").focus();
+    return;
+  }
+  // 恢复下架
+  const rsId = e.target.getAttribute("data-restore-post");
+  if (rsId) {
+    try {
+      await api("/api/admin/posts/" + rsId + "/restore", { method: "POST" });
+      toast("帖子 #" + rsId + " 已恢复展示");
+      loadAll();
+    } catch (err) { toast(err.message); }
+  }
+});
+
+// ---------- 下架弹层 ----------
+$("tdCancelBtn").addEventListener("click", () => {
+  $("takedownModal").classList.add("hidden");
+});
+$("tdReason").addEventListener("input", () => { $("tdErr").textContent = ""; });
+$("tdOkBtn").addEventListener("click", async () => {
+  const pid = $("takedownModal").dataset.pid;
+  const reason = $("tdReason").value.trim();
+  if (!reason) { $("tdErr").textContent = "请填写下架原因"; return; }
+  $("tdOkBtn").disabled = true;
+  try {
+    await api("/api/admin/posts/" + pid + "/takedown", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ reason }),
+    });
+    $("takedownModal").classList.add("hidden");
+    toast("帖子 #" + pid + " 已下架，作者会收到通知");
+    loadAll();
+  } catch (err) {
+    $("tdErr").textContent = err.message;
+  } finally {
+    $("tdOkBtn").disabled = false;
+  }
+});
+
+// 回车登录
+$("password").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
+
+// 启动：已有 token 直接进后台
+if (localStorage.getItem(TOKEN_KEY)) {
+  showDash();
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>

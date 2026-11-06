@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GraftCheck 原型预览</title>
+<style>
+  :root{
+    --bg:#F4FAEE;
+    --card:#FFFFFF;
+    --ink:#2E3A24;
+    --ink-soft:#6B7A5E;
+    --green:#6FB83F;      /* 主绿 · 生机 */
+    --green-tint:#EAF6DF;
+    --yellow:#F6CE3D;     /* 暖黄 */
+    --yellow-tint:#FBF1CF;
+    --orange:#F59331;     /* 活泼橙 */
+    --orange-tint:#FCE7D3;
+    --coral:#EF7A6B;      /* 不建议·柔红 */
+    --gray:#C2CBC0;       /* 重拍·浅灰绿 */
+    --line:#E6EEDD;
+    --shadow:0 6px 18px rgba(80,120,50,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#E9F1E0;display:flex;justify-content:center;align-items:center;
+    min-height:100vh;padding:24px;color:var(--ink);
+  }
+  .phone{
+    width:min(392px, calc(100vw - 48px));height:min(844px, calc(100vh - 48px));
+    background:var(--bg);border-radius:44px;
+    box-shadow:0 24px 60px rgba(60,90,40,.25);overflow:hidden;
+    position:relative;display:flex;flex-direction:column;
+    border:10px solid #1f2a17;
+  }
+  .statusbar{
+    height:44px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px;font-size:13px;font-weight:600;color:var(--ink);
+  }
+  .screen{flex:1;overflow-y:auto;padding:18px 18px 92px;}
+  .screen::-webkit-scrollbar{display:none;}
+
+  /* 顶部标题 */
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .topbar .logo{
+    width:34px;height:34px;border-radius:11px;background:var(--green);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;
+    box-shadow:var(--shadow);
+  }
+  .topbar h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.5px;}
+  .topbar .sub{font-size:12px;color:var(--ink-soft);margin-top:1px;}
+
+  /* 卡片 */
+  .card{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px;}
+
+  /* 图片位 */
+  .shot{
+    border:2px dashed var(--green);border-radius:16px;background:var(--green-tint);
+    height:172px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--ink-soft);gap:8px;cursor:pointer;
+  }
+  .shot.filled{background:var(--card);border-style:solid;}
+  .shot .big{font-size:34px;}
+  .shot .label{font-size:13px;font-weight:600;color:var(--ink);}
+  .shot .hint{font-size:11px;}
+  .row2{display:flex;gap:12px;}
+  .row2 .shot{flex:1;}
+
+  /* 按钮组 */
+  .btn-group{display:flex;gap:10px;margin-top:10px;}
+  .btn{
+    flex:1;border:none;border-radius:12px;padding:11px 0;font-size:14px;font-weight:600;
+    cursor:pointer;transition:.15s;
+  }
+  .btn.green{background:var(--green);color:#fff;}
+  .btn.ghost{background:var(--green-tint);color:var(--green);}
+  .btn.orange{background:var(--orange);color:#fff;}
+  .btn:active{transform:scale(.97);}
+
+  /* 品种选择 */
+  .field{margin-bottom:12px;}
+  .field label{font-size:12px;color:var(--ink-soft);display:block;margin-bottom:6px;}
+  .picker{
+    background:var(--green-tint);border-radius:12px;padding:12px 14px;
+    display:flex;align-items:center;justify-content:space-between;font-size:14px;
+  }
+  .picker .ph{color:var(--ink-soft);}
+
+  /* 结果横幅 */
+  .banner{border-radius:16px;padding:14px 16px;color:#fff;margin-bottom:14px;}
+  .banner.green{background:var(--green);}
+  .banner.yellow{background:var(--yellow);color:#5a4a06;}
+  .banner.orange{background:var(--orange);}
+  .banner.coral{background:var(--coral);}
+  .banner.gray{background:var(--gray);color:#3c4636;}
+  .banner .code{font-size:12px;opacity:.85;font-weight:600;}
+  .banner .ttl{font-size:19px;font-weight:800;margin:2px 0 6px;}
+  .banner .desc{font-size:13px;line-height:1.5;}
+
+  /* 明细行 */
+  .line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);}
+  .line:last-child{border-bottom:none;}
+  .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .line .k{font-size:13px;flex:1;}
+  .line .v{font-size:13px;font-weight:700;}
+  .bar{height:7px;border-radius:4px;background:var(--green-tint);overflow:hidden;margin-top:6px;}
+  .bar > i{display:block;height:100%;border-radius:4px;}
+
+  /* 建议卡 */
+  .tip{background:var(--yellow-tint);border-radius:14px;padding:13px 15px;font-size:13px;line-height:1.6;color:#6a5806;}
+  .tip b{color:#8a6f08;}
+
+  /* 追踪 · 月历打卡 */
+  .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .caltitle{font-size:16px;font-weight:800;cursor:pointer;user-select:none;}
+  .caltitle .caret{font-size:11px;color:var(--ink-soft);}
+  .nav{width:30px;height:30px;border:none;border-radius:10px;background:var(--green-tint);color:var(--green);font-size:18px;font-weight:700;cursor:pointer;line-height:1;padding:0 0 2px;}
+  .nav:active{transform:scale(.94);}
+  .calpop{position:absolute;left:16px;right:16px;top:58px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(60,90,40,.20);padding:12px 14px;z-index:5;}
+  .prow{display:flex;align-items:center;gap:8px;}
+  .prow label{font-size:12px;color:var(--ink-soft);flex:none;}
+  .prow select{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;background:var(--green-tint);color:var(--ink);}
+  .ddmenu{position:absolute;left:16px;right:16px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(60,90,40,.22);padding:6px;z-index:6;margin-top:4px;}
+  .ddm-item{padding:11px 12px;border-radius:10px;font-size:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .ddm-item:hover{background:var(--green-tint);}
+  .ddm-item.on{background:var(--green-tint);font-weight:700;color:#3c6d1c;}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal > *{min-width:0;}
+  .progress{height:12px;border-radius:7px;background:var(--green-tint);overflow:hidden;margin:10px 0 4px;}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--orange));}
+  .pl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);}
+  .cal .wd{text-align:center;font-size:10px;color:var(--ink-soft);padding-bottom:2px;}
+  .cal .day{
+    aspect-ratio:1/1;border-radius:10px;background:#F2F6EC;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:11px;color:#A9B3A0;position:relative;
+  }
+  .cal .day .leaf{font-size:15px;line-height:1;}
+  .cal .day.rec{color:var(--ink);font-weight:600;gap:2px;}
+  .cal .day.rec.up{background:var(--green-tint);}
+  .cal .day.rec.down{background:#FBE4E0;}
+  .cal .day.rec .arw{position:absolute;top:3px;right:5px;font-size:10px;font-weight:800;line-height:1;}
+  .cal .day.rec.up .arw{color:var(--green);}
+  .cal .day.rec.down .arw{color:var(--coral);}
+  .cal .day.today{outline:2px solid var(--green);outline-offset:-2px;font-weight:700;color:var(--ink);}
+  .cal .day.rec{cursor:pointer;}
+  .cal .day.jump{box-shadow:0 0 0 3px var(--yellow);}
+  .rec.hl{background:var(--yellow-tint)!important;border-radius:8px;transition:background .8s;}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:11px;color:var(--ink-soft);}
+  .legend i{font-style:normal;font-weight:800;}
+  .legend .lu{color:var(--green);}
+  .legend .ld{color:var(--coral);}
+  .rec{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);}
+  .rec .d{font-size:12px;color:var(--ink-soft);width:54px;flex:none;}
+  .rec .t{font-size:13px;}
+  .pill{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;}
+  .pill.up{background:var(--green-tint);color:var(--green);}
+  .pill.down{background:#FBE4E0;color:var(--coral);}
+
+  /* 当日记录详情页 */
+  .backbtn{
+    width:34px;height:34px;border:none;border-radius:11px;background:#fff;
+    box-shadow:var(--shadow);font-size:18px;font-weight:700;color:var(--green);
+    cursor:pointer;line-height:1;flex:none;
+  }
+  .backbtn:active{transform:scale(.94);}
+  .photo{
+    border-radius:16px;height:210px;
+    background:linear-gradient(135deg,var(--green-tint),var(--yellow-tint));
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  }
+  .photo .em{font-size:66px;line-height:1;filter:drop-shadow(0 6px 10px rgba(80,120,50,.25));}
+  .photo .cap{font-size:12px;color:var(--ink-soft);}
+
+  /* 社区 · 双列卡片流 */
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .pcard{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;}
+  .pcard:active{transform:scale(.98);}
+  .pcard .img{height:112px;display:flex;align-items:center;justify-content:center;font-size:44px;}
+  .pcard .tt{font-size:12px;font-weight:600;padding:8px 10px 4px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .pcard .ft{display:flex;align-items:center;gap:5px;padding:0 10px 9px;font-size:10px;color:var(--ink-soft);}
+  .pcard .ft .la{margin-left:auto;font-weight:700;color:var(--ink-soft);}
+
+  /* 帖子详情 · 固定顶栏+底栏，中间滚动 */
+  .detailwrap{padding:0 0 74px;display:flex;flex-direction:column;}
+  .dhead{flex:none;display:flex;align-items:center;gap:9px;padding:10px 14px;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);}
+  .hava{width:34px;height:34px;border-radius:50%;background:var(--orange-tint);color:var(--orange);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none;}
+  .hname{font-size:14px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .follow{border:1px solid var(--coral);color:var(--coral);background:#fff;border-radius:16px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;flex:none;}
+  .follow.on{border-color:var(--line);color:var(--ink-soft);background:var(--green-tint);}
+  .sharebtn{border:none;background:none;font-size:18px;cursor:pointer;color:var(--ink);flex:none;padding:4px;}
+  .dbody{flex:1;min-height:0;overflow-y:auto;padding:12px 14px 14px;}
+  .dbody::-webkit-scrollbar{display:none;}
+  .dbar{flex:none;display:flex;align-items:center;gap:2px;background:#fff;border-top:1px solid var(--line);padding:8px 10px;}
+  .dbar input{flex:1;min-width:0;border:none;background:var(--green-tint);border-radius:18px;padding:9px 14px;font-size:13px;outline:none;color:var(--ink);}
+  .bact{border:none;background:none;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer;padding:6px 7px;border-radius:12px;flex:none;}
+  .bact:active{background:var(--green-tint);}
+  .bact .bic{display:flex;}
+  .bact .bic svg{width:20px;height:20px;display:block;}
+  .bact .bic path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+  .bact.on{color:#E5484D;}
+  .bact.on .bic path{fill:currentColor;}
+  .bact.fav.on{color:var(--orange);}
+  .chead{font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:2px;}
+  .cmt{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .cmt:last-child{border-bottom:none;}
+  .cmt .ava{width:34px;height:34px;border-radius:50%;background:var(--green-tint);flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--green);}
+  .cmt .mid{flex:1;min-width:0;}
+  .cmt .who{font-size:12px;font-weight:700;}
+  .cmt .tx{font-size:13px;line-height:1.6;margin-top:3px;}
+  .cmt .mt{font-size:11px;color:var(--ink-soft);margin-top:5px;}
+  .cmt .rp{font-weight:600;}
+  .cmt .lk{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--ink-soft);cursor:pointer;flex:none;padding-top:4px;}
+  .cmt .lk svg{width:14px;height:14px;display:block;}
+  .cmt .lk svg path{fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+  .cmt .lk.on{color:#E5484D;}
+  .cmt .lk.on svg path{fill:currentColor;}
+
+  .fab{
+    position:absolute;right:20px;bottom:90px;width:54px;height:54px;border-radius:50%;
+    background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:26px;box-shadow:0 8px 20px rgba(245,147,49,.45);cursor:pointer;
+  }
+
+  /* 鳄鱼形象卡 */
+  .mascot-row{display:flex;align-items:center;gap:11px;}
+  .mascot-row img{width:60px;height:60px;flex:none;object-fit:contain;transform-origin:50% 92%;animation:avoFloat 3.4s ease-in-out infinite;cursor:pointer;}
+  @keyframes avoFloat{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    25%{transform:translateY(-4px) rotate(-2.5deg);}
+    75%{transform:translateY(-1px) rotate(2.5deg);}
+  }
+  .mascot-row img.avo-hi{animation:avoFloat 3.4s ease-in-out infinite,avoPop .6s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes avoPop{
+    0%{transform:scale(.35) rotate(-12deg);}
+    55%{transform:scale(1.18) rotate(7deg);}
+    100%{transform:scale(1) rotate(0deg);}
+  }
+  @media (prefers-reduced-motion:reduce){.mascot-row img{animation:none;}}
+  .bubble{background:var(--green-tint);border-radius:14px;padding:10px 13px;font-size:13px;line-height:1.5;color:#44652a;flex:1;}
+  .bubble b{color:#2f5413;}
+
+  /* 底部 tab */
+  .tabbar{
+    position:absolute;left:0;right:0;bottom:0;height:74px;background:#fff;
+    border-top:1px solid var(--line);display:flex;box-shadow:0 -4px 16px rgba(80,120,50,.06);
+    border-radius:0 0 34px 34px;
+  }
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--ink-soft);font-size:11px;}
+  .tab .ic{font-size:20px;}
+  .tab.active{color:var(--green);font-weight:700;}
+  .tab.active .ic{transform:translateY(-1px);}
+
+  .hidden{display:none;}
+  .muted{color:var(--ink-soft);font-size:12px;}
+
+  /* 窄窗口适配：预览面板比手机壳窄时收缩 */
+  @media (max-width:460px){
+    body{padding:10px;}
+    .phone{border-width:6px;border-radius:32px;}
+    .screen{padding:12px 12px 92px;}
+    .detailwrap{padding:0 0 74px;}
+    .card{padding:13px;border-radius:15px;}
+    .mascot-row img{width:46px;height:46px;}
+    .cal{gap:4px;}
+    .cal .day{font-size:10px;border-radius:8px;}
+    .cal .day .leaf{font-size:12px;}
+    .fab{right:14px;bottom:84px;width:48px;height:48px;font-size:22px;}
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+
+  <!-- ============ 识别 ============ -->
+  <div class="screen" id="s-identify">
+    <div class="topbar">
+      <div class="logo">🌿</div>
+      <div><h1>植物识别</h1><div class="sub">拍一张，认出它是什么、有没有病</div></div>
+    </div>
+
+    <div class="card mascot-row">
+      <img src="mascot/mascot_identify.png" alt="Avo" />
+      <div class="bubble">I'm <b>Avo</b> 🐊，拍张叶子 snap 给我，我来认它是什么、有没有病～</div>
+    </div>
+
+    <div class="card">
+      <div class="shot filled">
+        <div class="big">🍅</div>
+        <div class="label">番茄叶片 · 已选择</div>
+        <div class="hint">点击重新拍照 / 选图</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn green">拍照</button>
+        <button class="btn ghost">从相册选择</button>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:5px solid var(--green);">
+      <div class="line"><span class="dot" style="background:var(--green)"></span><span class="k">物种</span><span class="v">番茄 (Tomato) · 0.94</span></div>
+      <div class="line"><span class="dot" style="background:var(--orange)"></span><span class="k">病害</span><span class="v" style="color:var(--orange)">番茄早疫病 · 0.87</span></div>
+      <div class="bar"><i style="width:87%;background:var(--orange)"></i></div>
+    </div>
+
+    <div class="tip"><b>处理建议：</b>早疫病喜湿，建议摘除病叶并加强通风；可喷施代森锰锌类保护剂，连续阴雨后重点预防。</div>
+  </div>
+
+  <!-- ============ 嫁接 ============ -->
+  <div class="screen hidden" id="s-graft">
+    <div class="topbar">
+      <div class="logo">🌱</div>
+      <div><h1>嫁接分析</h1><div class="sub">接穗 + 砧木，先看能不能嫁</div></div>
+    </div>
+
+    <div class="card mascot-row">
+      <img src="mascot/mascot_graft.png" alt="Avo" />
+      <div class="bubble">接穗、砧木都给我看看，能不能嫁、风险多大，我来判 🌱</div>
+    </div>
+
+    <div class="row2">
+      <div class="shot"><div class="big">＋</div><div class="label">接穗</div><div class="hint">拍照/相册</div></div>
+      <div class="shot"><div class="big">＋</div><div class="label">砧木</div><div class="hint">拍照/相册</div></div>
+    </div>
+
+    <div class="card">
+      <div class="field"><label>接穗品种</label><div class="picker"><span>番茄</span><span>▾</span></div></div>
+      <div class="field"><label>砧木品种</label><div class="picker"><span class="ph">点击选择 / 输入</span><span>▾</span></div></div>
+    </div>
+
+    <button class="btn orange" style="width:100%">分析</button>
+
+    <div class="banner orange" style="margin-top:14px;">
+      <div class="code">DECISION · defer</div>
+      <div class="ttl">暂缓嫁接</div>
+      <div class="desc">检测到砧木疑似病害信号（置信度 0.87）。病害症状可能与嫁接不亲和症状混淆，建议先隔离观察或进一步检测，再尝试嫁接。</div>
+    </div>
+
+    <div class="card">
+      <div class="line"><span class="dot" style="background:var(--green)"></span><span class="k">接穗 · 健康</span><span class="v">0.92</span></div>
+      <div class="line"><span class="dot" style="background:var(--orange)"></span><span class="k">砧木 · 疑似病害</span><span class="v" style="color:var(--orange)">0.87</span></div>
+      <div class="line"><span class="k">兼容性评分</span><span class="v" style="color:var(--green)">78 / 100</span></div>
+    </div>
+  </div>
+
+  <!-- ============ 追踪 · 月历打卡 ============ -->
+  <div class="screen hidden" id="s-track">
+    <div class="topbar">
+      <div class="logo">📈</div>
+      <div><h1>恢复追踪</h1><div class="sub">像收集奶茶一样，收集每株植物的好转</div></div>
+    </div>
+
+    <div class="card mascot-row">
+      <img src="mascot/mascot_track.png" alt="Avo" />
+      <div class="bubble">每天来打卡一张，我陪你看着它一天天好起来 ↑</div>
+    </div>
+
+    <!-- 多株切换 -->
+    <div class="card" style="position:relative;">
+      <div class="field" style="margin-bottom:0;">
+        <label>切换追踪的植物（可同时追踪多株）</label>
+        <div class="picker" id="plantSwitch" style="cursor:pointer;">
+          <span id="plantName">🍅 番茄 · 1号盆</span><span>▾</span>
+        </div>
+      </div>
+      <div class="ddmenu hidden" id="plantMenu"></div>
+      <div class="pl" style="margin-top:10px;"><span id="plantPlan">早疫病恢复 · Day 5 / 15</span><span id="plantTrend" style="font-weight:700;color:var(--green);">↑ 整体好转</span></div>
+      <div class="progress"><i id="plantProg" style="width:33%"></i></div>
+    </div>
+
+    <!-- 月历 -->
+    <div class="card" style="position:relative;">
+      <div class="calhead">
+        <button class="nav" id="prevM" title="上个月">‹</button>
+        <div class="caltitle" id="calTitle">2026 年 10 月 <span class="caret">▾</span></div>
+        <button class="nav" id="nextM" title="下个月">›</button>
+      </div>
+      <div class="calpop hidden" id="calPop">
+        <div class="prow">
+          <label>年份</label><select id="selY"></select>
+          <label>月份</label><select id="selM"></select>
+        </div>
+      </div>
+      <div class="cal" id="cal"></div>
+      <div class="legend"><span><i class="lu">↑</i> 好转</span><span><i class="ld">↓</i> 恶化</span><span>灰格 = 未记录</span><span style="margin-left:auto;">框 = 今天</span></div>
+    </div>
+
+    <!-- 月度小结 -->
+    <div class="card">
+      <div class="muted" style="margin-bottom:2px;">This Month</div>
+      <div style="font-size:26px;font-weight:800;">12 天 <span style="font-size:14px;font-weight:600;color:var(--ink-soft);">· 2 株植物</span></div>
+      <div class="muted" style="margin-top:6px;">🌿 本月恢复王：番茄（健康置信度 0.40 → 0.78）</div>
+    </div>
+
+    <!-- 历次记录 -->
+    <div class="card" id="recList">
+      <div class="muted" style="margin-bottom:4px;">历次记录</div>
+    </div>
+
+    <div class="fab" title="上传今日照片">＋</div>
+  </div>
+
+  <!-- ============ 当日记录详情 ============ -->
+  <div class="screen hidden" id="s-record">
+    <div class="topbar">
+      <button class="backbtn" id="recBack" title="返回">‹</button>
+      <div><h1 id="recTitle">10月5日 · 打卡记录</h1><div class="sub" id="recSub">🍅 番茄 · 1号盆</div></div>
+    </div>
+
+    <div class="card">
+      <div class="photo">
+        <div class="em" id="recPhoto">🌿</div>
+        <div class="cap" id="recCap">当日上传照片 · 叶面正面</div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:5px solid var(--green);">
+      <div class="line"><span class="dot" id="recDot" style="background:var(--green)"></span><span class="k">健康置信度</span><span class="v" id="recConf">0.62</span></div>
+      <div class="line"><span class="dot" style="background:var(--gray)"></span><span class="k">与上次对比</span><span class="v" id="recDelta">↑ +0.08（好转）</span></div>
+      <div class="line"><span class="dot" style="background:var(--orange)"></span><span class="k">病害状态</span><span class="v" id="recDisease">番茄早疫病（观察恢复中）</span></div>
+      <div class="line"><span class="dot" style="background:var(--green)"></span><span class="k">恢复进度</span><span class="v" id="recDay">Day 5 / 15</span></div>
+    </div>
+
+    <div class="card">
+      <div class="muted" style="margin-bottom:4px;">当日备注</div>
+      <div style="font-size:14px;line-height:1.6;" id="recNote">新叶展开，旧斑干缩</div>
+    </div>
+
+    <div class="tip" id="recTip"><b>处理建议：</b>保持当前方案，继续观察新叶长势。</div>
+  </div>
+
+  <!-- ============ 社区 ============ -->
+  <div class="screen hidden" id="s-community">
+    <div class="topbar">
+      <div class="logo">💬</div>
+      <div><h1>社区</h1><div class="sub">问问题、晒技巧</div></div>
+    </div>
+
+    <div class="card mascot-row">
+      <img src="mascot/mascot_community.png" alt="Avo" />
+      <div class="bubble">来社区聊聊种植故事、晒晒你的小苗吧 🌿</div>
+    </div>
+
+    <div class="mgrid" id="postGrid"></div>
+
+    <div class="fab">＋</div>
+  </div>
+
+  <!-- ============ 帖子详情（顶栏/底栏固定） ============ -->
+  <div class="screen hidden detailwrap" id="s-post">
+    <div class="dhead">
+      <button class="backbtn" id="postBack" title="返回">‹</button>
+      <div class="hava" id="postAva">小</div>
+      <div class="hname" id="postWho">小绿同学</div>
+      <button class="follow" id="actFollow">关注</button>
+      <button class="sharebtn" id="actShare" title="分享">↗</button>
+    </div>
+
+    <div class="dbody">
+      <div class="card">
+        <div class="photo" style="height:190px;">
+          <div class="em" id="postPhoto">🍅</div>
+          <div class="cap">帖子配图</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:16px;font-weight:800;line-height:1.5;" id="postTitle">标题</div>
+        <div class="muted" style="margin:5px 0 10px;"><span id="postTime">2 小时前 · 病害求助</span></div>
+        <div style="font-size:14px;line-height:1.7;" id="postBody">正文</div>
+      </div>
+
+      <div class="card">
+        <div class="chead">共 <span id="cmtN">0</span> 条评论</div>
+        <div id="cmtList"></div>
+      </div>
+    </div>
+
+    <div class="dbar">
+      <input id="cmtInput" placeholder="说点什么…" />
+      <button class="bact" id="actLike"><span class="bic"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span><span id="likeN">0</span></button>
+      <button class="bact fav" id="actFav"><span class="bic"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg></span><span id="favN">0</span></button>
+      <button class="bact" id="actCmt"><span class="bic"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span><span id="cmtNBar">0</span></button>
+    </div>
+  </div>
+
+  <!-- 底部 tab -->
+  <div class="tabbar">
+    <div class="tab active" data-t="identify"><div class="ic">🌿</div>识别</div>
+    <div class="tab" data-t="graft"><div class="ic">🌱</div>嫁接</div>
+    <div class="tab" data-t="track"><div class="ic">📈</div>追踪</div>
+    <div class="tab" data-t="community"><div class="ic">💬</div>社区</div>
+  </div>
+</div>
+
+<script>
+  const tabs=document.querySelectorAll('.tab');
+  const map={identify:'s-identify',graft:'s-graft',track:'s-track',community:'s-community'};
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    Object.values(map).forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.getElementById('s-record').classList.add('hidden');
+    document.getElementById('s-post').classList.add('hidden');
+    document.getElementById(map[t.dataset.t]).classList.remove('hidden');
+    const mimg=document.querySelector('#'+map[t.dataset.t]+' .mascot-row img');
+    if(mimg){mimg.classList.remove('avo-hi');void mimg.offsetWidth;mimg.classList.add('avo-hi');}
+  }));
+  /* 点 Avo 本体也会跳一下打招呼 */
+  document.querySelectorAll('.mascot-row img').forEach(img=>{
+    img.addEventListener('click',()=>{
+      img.classList.remove('avo-hi');void img.offsetWidth;img.classList.add('avo-hi');
+    });
+  });
+
+  /* ===== 追踪 · 月历（可翻页/选年月/点记录进详情页） ===== */
+  // rec: 每天一条完整记录。dir: up=比上次好转(绿↑) / down=恶化(红↓) / start=第一次记录
+  const plants={
+    tomato:{
+      name:'🍅 番茄 · 1号盆', plan:'早疫病恢复 · 15 天计划', pct:33,
+      trend:'↑ 整体好转', up:true, disease:'番茄早疫病',
+      data:{ '2026-10':{rec:{
+        1:{dir:'start',conf:0.40,photo:'🥀',txt:'病斑明显，叶片发黄'},
+        3:{dir:'down',conf:0.36,photo:'🌧️',txt:'连日阴雨，病斑略有扩大'},
+        5:{dir:'up',conf:0.62,photo:'🌿',txt:'新叶展开，旧斑干缩'},
+        7:{dir:'up',conf:0.70,photo:'🌿',txt:'整体平稳，继续用药'},
+        9:{dir:'up',conf:0.78,photo:'🌱',txt:'基本恢复，继续观察'},
+        12:{dir:'up',conf:0.83,photo:'🌱',txt:'新叶完全舒展，无新病斑'}
+      }}}
+    },
+    rose:{
+      name:'🌹 月季 · 阳台', plan:'黑斑病观察 · 15 天计划', pct:53,
+      trend:'↓ 略有恶化', up:false, disease:'月季黑斑病',
+      data:{ '2026-10':{rec:{
+        2:{dir:'start',conf:0.55,photo:'🍃',txt:'叶面少量黑斑'},
+        4:{dir:'up',conf:0.58,photo:'🌿',txt:'摘除病叶后略有好转'},
+        6:{dir:'down',conf:0.50,photo:'🌧️',txt:'雨后斑点多了一圈'},
+        8:{dir:'down',conf:0.44,photo:'🥀',txt:'老叶发黄，斑点连片'},
+        10:{dir:'down',conf:0.41,photo:'🥀',txt:'蔓延到新叶，需处理'}
+      }}}
+    }
+  };
+  let cur='tomato';
+  const view={y:2026,m:10};
+  const TODAY={y:2026,m:10,d:27};
+  const $=id=>document.getElementById(id);
+
+  function renderTrack(){
+    const p=plants[cur];
+    $('plantName').textContent=p.name;
+    $('plantPlan').textContent=p.plan;
+    const trend=$('plantTrend');
+    trend.textContent=p.trend;
+    trend.style.color=p.up?'var(--green)':'var(--coral)';
+    $('plantProg').style.width=p.pct+'%';
+    $('calTitle').firstChild.textContent=view.y+' 年 '+view.m+' 月 ';
+
+    // 月历
+    const cal=$('cal');
+    cal.innerHTML='';
+    ['日','一','二','三','四','五','六'].forEach(w=>{
+      const d=document.createElement('div');d.className='wd';d.textContent=w;cal.appendChild(d);
+    });
+    const firstDow=new Date(view.y,view.m-1,1).getDay();
+    const days=new Date(view.y,view.m,0).getDate();
+    for(let i=0;i<firstDow;i++) cal.appendChild(document.createElement('div'));
+    const month=p.data[view.y+'-'+view.m];
+    const rec=(month&&month.rec)||{};
+    for(let d=1;d<=days;d++){
+      const cell=document.createElement('div');cell.className='day';cell.textContent=d;
+      const st=rec[d];
+      if(st){
+        cell.classList.add('rec',st==='down'?'down':'up');
+        const leaf=document.createElement('div');leaf.className='leaf';
+        leaf.textContent=st==='down'?'🥀':'🌿';
+        cell.insertBefore(leaf,cell.firstChild);
+        if(st!=='start'){
+          const arw=document.createElement('span');arw.className='arw';
+          arw.textContent=st==='down'?'↓':'↑';
+          cell.appendChild(arw);
+        }
+        cell.title='点我看这天的记录详情';
+        cell.addEventListener('click',()=>openDay(view.y,view.m,d));
+      }
+      if(TODAY.y===view.y&&TODAY.m===view.m&&TODAY.d===d) cell.classList.add('today');
+      cal.appendChild(cell);
+    }
+
+    renderNotes();
+  }
+
+  function renderNotes(){
+    const list=$('recList');
+    list.querySelectorAll('.rec,.empty').forEach(x=>x.remove());
+    const month=plants[cur].data[view.y+'-'+view.m];
+    const rec=(month&&month.rec)||{};
+    const days=Object.keys(rec).map(Number).sort((a,b)=>a-b);
+    if(!days.length){
+      const e=document.createElement('div');e.className='empty';
+      e.innerHTML='<span class="muted">本月暂无记录，点右下角 ＋ 开始打卡</span>';
+      list.appendChild(e);return;
+    }
+    days.forEach(day=>{
+      const r=rec[day];
+      const tag=r.dir==='down'?'↓':(r.dir==='up'?'↑':'·');
+      const div=document.createElement('div');div.className='rec';div.dataset.day=day;
+      div.style.cursor='pointer';
+      div.title='点我查看这天的详细记录';
+      div.innerHTML='<span class="d">'+view.m+'/'+day+'</span>'
+        +'<span class="pill '+(r.dir==='down'?'down':'up')+'">'+tag+' '+r.conf.toFixed(2)+'</span>'
+        +'<span class="t">'+r.txt+'</span>';
+      div.addEventListener('click',()=>openDay(view.y,view.m,day));
+      list.appendChild(div);
+    });
+  }
+
+  // 点日历上有记录的日子 / 历次记录条目 → 进入当日记录详情页
+  function openDay(y,m,d){
+    const p=plants[cur];
+    const month=p.data[y+'-'+m];
+    const r=month&&month.rec[d];
+    if(!r) return;
+    const days=Object.keys(month.rec).map(Number).sort((a,b)=>a-b);
+    const prev=days.filter(x=>x<d).pop();
+    const startDay=days[0];
+
+    $('recTitle').textContent=m+'月'+d+'日 · 打卡记录';
+    $('recSub').textContent=p.name+' · '+p.plan;
+    $('recPhoto').textContent=r.photo;
+    $('recConf').textContent=r.conf.toFixed(2);
+    $('recDot').style.background=r.dir==='down'?'var(--coral)':'var(--green)';
+
+    const delta=$('recDelta');
+    if(prev==null){
+      delta.textContent='首次记录（建立基线）';
+      delta.style.color='var(--ink)';
+    }else{
+      const diff=r.conf-month.rec[prev].conf;
+      const better=diff>=0;
+      delta.textContent=(better?'↑ +':'↓ -')+Math.abs(diff).toFixed(2)+'（较上次'+(better?'好转':'恶化')+'）';
+      delta.style.color=better?'var(--green)':'var(--coral)';
+    }
+
+    $('recDisease').textContent=p.disease+'（'+(r.dir==='down'?'恶化中':'观察恢复中')+'）';
+    $('recDay').textContent='Day '+(d-startDay+1)+' / 15';
+    $('recNote').textContent=r.txt;
+    $('recTip').innerHTML=r.dir==='down'
+      ?'<b>处理建议：</b>状况出现反复，优先检查湿度与通风，摘除新增病叶；必要时按说明补施一次保护剂，三天后再打卡对比。'
+      :(r.dir==='up'
+      ?'<b>处理建议：</b>保持当前方案，继续观察新叶长势；症状未完全消失前不要提前停药，防止反弹。'
+      :'<b>处理建议：</b>基线已建立，接下来每天拍一张，App 会自动与这张对比，给出 ↑/↓ 趋势。');
+
+    Object.values(map).forEach(id=>$(id).classList.add('hidden'));
+    const sr=$('s-record');
+    sr.classList.remove('hidden');
+    sr.scrollTop=0;
+  }
+
+  // 详情页返回 → 回到追踪月历
+  $('recBack').addEventListener('click',()=>{
+    $('s-record').classList.add('hidden');
+    $('s-track').classList.remove('hidden');
+  });
+
+  function shiftMonth(n){
+    view.m+=n;
+    if(view.m>12){view.m=1;view.y++;}
+    if(view.m<1){view.m=12;view.y--;}
+    syncSelects();renderTrack();
+  }
+  function syncSelects(){$('selY').value=view.y;$('selM').value=view.m;}
+
+  $('prevM').addEventListener('click',()=>shiftMonth(-1));
+  $('nextM').addEventListener('click',()=>shiftMonth(1));
+  // 点标题 → 弹出年/月下拉
+  $('calTitle').addEventListener('click',e=>{
+    e.stopPropagation();
+    $('calPop').classList.toggle('hidden');
+    syncSelects();
+  });
+  $('selY').addEventListener('change',e=>{view.y=+e.target.value;renderTrack();$('calPop').classList.add('hidden');});
+  $('selM').addEventListener('change',e=>{view.m=+e.target.value;renderTrack();$('calPop').classList.add('hidden');});
+  document.addEventListener('click',e=>{
+    const pop=$('calPop');
+    if(!pop.classList.contains('hidden')&&!pop.contains(e.target)) pop.classList.add('hidden');
+    const pm=$('plantMenu');
+    if(!pm.classList.contains('hidden')&&!pm.contains(e.target)&&!$('plantSwitch').contains(e.target)) pm.classList.add('hidden');
+  });
+  // 填充年/月下拉
+  (function(){
+    for(let y=2024;y<=2028;y++){const o=document.createElement('option');o.value=y;o.textContent=y+' 年';$('selY').appendChild(o);}
+    for(let m=1;m<=12;m++){const o=document.createElement('option');o.value=m;o.textContent=m+' 月';$('selM').appendChild(o);}
+  })();
+
+  // 植物下拉框：点开列选项，选中即切换
+  function renderPlantMenu(){
+    const menu=$('plantMenu');
+    menu.innerHTML='';
+    Object.keys(plants).forEach(k=>{
+      const p=plants[k];
+      const it=document.createElement('div');
+      it.className='ddm-item'+(k===cur?' on':'');
+      it.innerHTML='<span>'+p.name+'</span>'+(k===cur?'<span>✓</span>':'');
+      it.addEventListener('click',e=>{
+        e.stopPropagation();
+        cur=k;
+        $('plantMenu').classList.add('hidden');
+        renderTrack();
+      });
+      menu.appendChild(it);
+    });
+  }
+  $('plantSwitch').addEventListener('click',e=>{
+    e.stopPropagation();
+    const menu=$('plantMenu');
+    menu.classList.toggle('hidden');
+    if(!menu.classList.contains('hidden')) renderPlantMenu();
+  });
+  renderTrack();
+
+  /* ===== 社区 · 双列卡片流 + 帖子详情 ===== */
+  const posts=[
+    {id:1,tag:'病害求助',title:'我家番茄叶子长黑斑了，是早疫病还是晚疫病？求大佬看一眼',who:'小绿同学',ava:'小',time:'2 小时前',photo:'🍅',bg:'linear-gradient(135deg,var(--green-tint),var(--yellow-tint))',likes:12,favs:3,
+     body:'阳台种的番茄，底下几片叶子突然长了黑褐色斑点，还有同心轮纹。是早疫病还是晚疫病啊？要不要马上摘叶？🥺',
+     comments:[{who:'阿橘',ava:'阿',t:'1 小时前',lk:3,txt:'看同心轮纹像早疫病，晚疫病一般是水渍状大斑。'}, {who:'柚子',ava:'柚',t:'48 分钟前',lk:1,txt:'先把病叶摘掉隔离，别浇水浇到叶子上。'}]},
+    {id:2,tag:'种植技巧',title:'嫁接成活小窍门：接口绑紧别勒断，前三天别暴晒',who:'阿橘',ava:'阿',time:'5 小时前',photo:'🌱',bg:'linear-gradient(135deg,var(--yellow-tint),var(--orange-tint))',likes:38,favs:21,
+     body:'亲测成功率翻倍的三个要点：① 接口绑紧但别勒断形成层；② 前三天散射光，别暴晒；③ 一周内不施肥。欢迎补充！',
+     comments:[{who:'小绿同学',ava:'小',t:'2 小时前',lk:2,txt:'收藏了，下周试番茄劈接！'}]},
+    {id:3,tag:'分享',title:'追踪半个月，这株月季真的救回来了！',who:'柚子',ava:'柚',time:'昨天',photo:'🌹',bg:'linear-gradient(135deg,var(--orange-tint),var(--green-tint))',likes:56,favs:9,
+     body:'黑斑病最严重的时候只剩三片叶子。每天打卡拍照，App 自动对比趋势，按建议摘叶喷药，半个月后新叶完全舒展了！',
+     comments:[{who:'阿橘',ava:'阿',t:'18 小时前',lk:5,txt:'恭喜！恢复曲线太治愈了。'}, {who:'小绿同学',ava:'小',t:'12 小时前',lk:8,txt:'求分享用的什么药剂～'}]},
+    {id:4,tag:'求助',title:'黄瓜苗嫁接后蔫了两天，还有救吗？',who:'瓜农老李',ava:'李',time:'昨天',photo:'🥒',bg:'linear-gradient(135deg,var(--green-tint),var(--green-tint))',likes:7,favs:2,
+     body:'靠接的黄瓜苗，接口看着愈合还行，但子叶开始发蔫。是不是保温没做够？现在这样还能缓过来吗？',
+     comments:[{who:'阿橘',ava:'阿',t:'20 小时前',lk:1,txt:'前三天湿度要到 90% 以上，套袋保湿试试。'}]},
+    {id:5,tag:'晒图',title:'Avo帮我认出来的糖橙，转色期到啦',who:'橙子不酸',ava:'橙',time:'3 天前',photo:'🍊',bg:'linear-gradient(135deg,var(--orange-tint),var(--yellow-tint))',likes:88,favs:12,
+     body:'识别+追踪用了两个月，从花期一路看到转色，成就感拉满，推荐大家都试试 15 天恢复计划。',
+     comments:[{who:'柚子',ava:'柚',t:'2 天前',lk:4,txt:'颜色好正！求种植环境参数。'}]},
+    {id:6,tag:'种植技巧',title:'雨季防早疫病：通风比打药更重要',who:'园艺小赵',ava:'赵',time:'4 天前',photo:'🌧️',bg:'linear-gradient(135deg,var(--yellow-tint),var(--green-tint))',likes:29,favs:33,
+     body:'连续两年雨季中招后总结的：株距拉开、底部老叶及时清、傍晚不浇水，这三条做到位，用药量减了一半。',
+     comments:[{who:'瓜农老李',ava:'李',t:'3 天前',lk:2,txt:'底部老叶这条真的有用。'}]}
+  ];
+
+  let openPostId=null;
+
+  function renderGrid(){
+    const g=$('postGrid');
+    g.innerHTML='';
+    posts.forEach(p=>{
+      const c=document.createElement('div');c.className='pcard';
+      c.innerHTML='<div class="img" style="background:'+p.bg+';">'+p.photo+'</div>'
+        +'<div class="tt">'+p.title+'</div>'
+        +'<div class="ft"><span>'+p.ava+' '+p.who+'</span><span class="la">♡ '+p.likes+'</span></div>';
+      c.addEventListener('click',()=>openPost(p.id));
+      g.appendChild(c);
+    });
+  }
+
+  const HEART_SVG='<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+
+  function renderCmts(){
+    const p=posts.find(x=>x.id===openPostId);
+    const list=$('cmtList');
+    list.innerHTML='';
+    p.comments.forEach(c=>{
+      const d=document.createElement('div');d.className='cmt';
+      d.innerHTML='<div class="ava">'+c.ava+'</div>'
+        +'<div class="mid"><div class="who">'+c.who+'</div><div class="tx">'+c.txt+'</div>'
+        +'<div class="mt">'+c.t+' · <span class="rp">回复</span></div></div>'
+        +'<div class="lk'+(c.liked?' on':'')+'">'+HEART_SVG+'<span>'+c.lk+'</span></div>';
+      d.querySelector('.lk').addEventListener('click',()=>{
+        c.liked=!c.liked;
+        c.lk+=c.liked?1:-1;
+        renderCmts();
+      });
+      list.appendChild(d);
+    });
+    $('cmtN').textContent=p.comments.length;
+    $('cmtNBar').textContent=p.comments.length;
+  }
+
+  function openPost(id){
+    openPostId=id;
+    const p=posts.find(x=>x.id===id);
+    $('postAva').textContent=p.ava;
+    $('postWho').textContent=p.who;
+    const fl=$('actFollow');
+    fl.textContent=p.followed?'已关注':'关注';
+    fl.classList.toggle('on',!!p.followed);
+    $('postPhoto').textContent=p.photo;
+    $('postPhoto').parentElement.style.background=p.bg;
+    $('postTitle').textContent=p.title;
+    $('postTime').textContent=p.time+' · '+p.tag;
+    $('postBody').textContent=p.body;
+    $('likeN').textContent=p.likes;
+    $('favN').textContent=p.favs;
+    $('actLike').classList.toggle('on',!!p.liked);
+    $('actFav').classList.toggle('on',!!p.faved);
+    renderCmts();
+
+    Object.values(map).forEach(x=>$(x).classList.add('hidden'));
+    const sp=$('s-post');
+    sp.classList.remove('hidden');
+    sp.querySelector('.dbody').scrollTop=0;
+  }
+
+  $('actLike').addEventListener('click',()=>{
+    const p=posts.find(x=>x.id===openPostId);
+    p.liked=!p.liked;
+    p.likes+=p.liked?1:-1;
+    $('actLike').classList.toggle('on',p.liked);
+    $('likeN').textContent=p.likes;
+    renderGrid();
+  });
+  $('actFav').addEventListener('click',()=>{
+    const p=posts.find(x=>x.id===openPostId);
+    p.faved=!p.faved;
+    p.favs+=p.faved?1:-1;
+    $('actFav').classList.toggle('on',p.faved);
+    $('favN').textContent=p.favs;
+  });
+  $('actFollow').addEventListener('click',()=>{
+    const p=posts.find(x=>x.id===openPostId);
+    p.followed=!p.followed;
+    const b=$('actFollow');
+    b.textContent=p.followed?'已关注':'关注';
+    b.classList.toggle('on',p.followed);
+  });
+  $('actCmt').addEventListener('click',()=>{$('cmtInput').focus();});
+  $('actShare').addEventListener('click',()=>{$('actShare').textContent='✓';setTimeout(()=>$('actShare').textContent='↗',900);});
+  $('cmtInput').addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    const txt=$('cmtInput').value.trim();
+    if(!txt) return;
+    posts.find(x=>x.id===openPostId).comments.push({who:'我',ava:'我',t:'刚刚',lk:0,txt:txt});
+    $('cmtInput').value='';
+    renderCmts();
+  });
+  $('postBack').addEventListener('click',()=>{
+    $('s-post').classList.add('hidden');
+    $('s-community').classList.remove('hidden');
+  });
+  renderGrid();
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# ── 依赖 & 构建产物（体积大，绝不进仓库）──
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/web-build/
+web-build/
+.expo/
+*.jks
+*.keystore
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+
+# ── 运行时数据 / 上传：含真实用户图片与数据库，切勿提交 ──
+backend/data/
+*.log
+server.start.txt
+*.db
+*.db-shm
+*.db-wal
+
+# ── 调试 / 过程文件 ──
+preview_*.png
+crop_*.png
+
+# ── 项目内部记忆（含本地笔记，勿提交）──
+.workbuddy/
+
+# ── 系统 / 密钥 ──
+.DS_Store
+Thumbs.db
+.env
+.env.*
+
+# 注：backend/models/plantnet/plantnet_resnet18.pth（约 45MB）需要保留在仓库里，
+# 因为 backend/Dockerfile 用 COPY backend/models 把物种模型打进镜像。
+# 若日后想减小仓库体积，可改用 git-lfs 或改成构建期下载。

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>植物健康与嫁接辅助 · 网页测试台</title>
+<style>
+  :root{
+    --green:#6FB83F; --green-d:#4A8A22; --tint:#EAF6DF; --yellow:#F6CE3D;
+    --orange:#F59331; --bg:#F4FAEE; --card:#fff; --text:#2F4A1D; --sub:#7A8B6F;
+    --red:#C2410C; --border:#DCEBD0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",system-ui,sans-serif;}
+  body{background:var(--bg);color:var(--text);padding-bottom:80px;}
+  .wrap{max-width:560px;margin:0 auto;padding:14px 14px 0;}
+  .apirow{display:flex;gap:8px;align-items:center;background:var(--card);border-radius:12px;padding:8px 10px;margin-bottom:12px;}
+  .apirow input{flex:1;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;}
+  .apirow button{border:0;background:var(--green);color:#fff;border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  .badge{font-size:11px;color:var(--sub);}
+  .card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(60,90,40,.06);}
+  h1{font-size:20px;margin:8px 0 10px;}
+  h2{font-size:15px;margin:14px 0 8px;color:var(--green-d);}
+  .row{display:flex;gap:10px;align-items:center;}
+  .line{display:flex;align-items:center;padding:5px 0;font-size:14px;}
+  .k{width:56px;color:var(--sub);font-weight:700;font-size:13px;flex:none;}
+  .v{font-weight:600;}
+  button.btn{border:0;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;background:var(--green);color:#fff;}
+  button.btn.alt{background:var(--yellow);color:#6B5A0E;}
+  button.btn.ghost{background:#EFEFEA;color:var(--sub);}
+  button.btn.wide{width:100%;margin-top:10px;}
+  button.btn:disabled{opacity:.5;cursor:wait;}
+  input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:14px;margin:4px 0 10px;}
+  label{font-size:13px;font-weight:700;color:var(--sub);}
+  .err{color:var(--red);font-size:13px;margin:6px 0;}
+  .hint{font-size:12px;color:var(--sub);text-align:center;margin-top:10px;}
+  img.preview{width:100%;height:170px;object-fit:contain;border-radius:12px;background:var(--tint);display:block;}
+  .mascot{display:flex;gap:10px;align-items:center;background:var(--tint);border-radius:14px;padding:10px 12px;margin-bottom:12px;}
+  .mascot img{width:52px;height:52px;flex:none;}
+  .mascot p{font-size:13px;color:#44652A;line-height:1.5;}
+  .tier{border-radius:14px;padding:14px;text-align:center;font-size:20px;font-weight:800;margin-bottom:8px;}
+  .tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;}
+  .tabs button{flex:1;border:0;background:none;padding:8px 0 10px;font-size:12px;color:var(--sub);cursor:pointer;}
+  .tabs button.on{color:var(--green-d);font-weight:800;}
+  .tabs .ico{display:block;font-size:20px;margin-bottom:2px;}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+  .cal .wd{font-size:11px;color:var(--sub);text-align:center;}
+  .cal .day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px;font-size:12px;position:relative;}
+  .cal .day.today{border:1.5px solid var(--green);}
+  .cal .day .mk{font-size:12px;font-weight:800;}
+  .rec{display:flex;align-items:center;background:var(--card);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:13px;}
+  .rec .d{width:84px;font-weight:700;}
+  .rec .arrow{margin-left:auto;font-weight:800;}
+  .posts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .pcard{background:var(--card);border-radius:14px;overflow:hidden;cursor:pointer;}
+  .pcard .cov{height:90px;display:flex;align-items:center;justify-content:center;font-size:38px;}
+  .pcard .tt{font-size:12px;font-weight:600;padding:8px 10px 4px;line-height:1.4;}
+  .pcard .mt{display:flex;justify-content:space-between;padding:0 10px 8px;font-size:11px;color:var(--sub);}
+  .cmt{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #F2F2EC;font-size:13px;}
+  .cmt .n{width:64px;color:var(--sub);font-weight:700;flex:none;}
+  .fab{position:fixed;right:18px;bottom:74px;width:52px;height:52px;border-radius:50%;border:0;background:var(--orange);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 6px 16px rgba(245,147,49,.4);}
+  .pill{border:1px solid var(--border);background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;}
+  .up{color:var(--green-d);font-weight:800;} .down{color:var(--red);font-weight:800;}
+  .hidden{display:none;}
+  .sug{font-size:14px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌿 网页测试台 <span class="badge">原型接真后端</span></h1>
+  <div class="apirow">
+    <input id="apiBase" value="http://127.0.0.1:8010" spellcheck="false">
+    <button onclick="ping()">连接</button>
+  </div>
+  <div class="badge" id="healthBadge">未连接</div>
+</div>
+
+<div class="wrap" id="s-identify">
+  <div class="mascot">
+    <img src="mascot/mascot_identify.png" alt="Avo">
+    <p>我是 <b>Avo</b> 🐊，拍张叶子 snap 给我，我来认它是什么、有没有病～（浏览器里选一张图片代替拍照）</p>
+  </div>
+  <div class="card">
+    <input type="file" id="idFile" accept="image/*" style="margin:6px 0 10px;">
+    <img id="idPreview" class="preview hidden">
+    <button class="btn wide" id="idGo" onclick="runIdentify()">开始识别（plant_identify）</button>
+    <div class="err" id="idErr"></div>
+  </div>
+  <div id="idResult"></div>
+</div>
+
+<div class="wrap hidden" id="s-graft">
+  <div class="card">
+    <label>接穗图</label><input type="file" id="gScion" accept="image/*">
+    <label>砧木图</label><input type="file" id="gRoot" accept="image/*">
+    <label>接穗品种</label><select id="gScionV"></select>
+    <label>砧木品种</label><select id="gRootV"></select>
+    <div class="row">
+      <div style="flex:1"><label>温度（可选）</label><input type="number" id="gTemp" placeholder="如 25"></div>
+      <div style="flex:1"><label>土壤（可选）</label><input type="text" id="gSoil" placeholder="如 疏松"></div>
+    </div>
+    <button class="btn wide" id="gGo" onclick="runGraft()">开始分析（graft_screen）</button>
+    <div class="err" id="gErr"></div>
+  </div>
+  <div id="gResult"></div>
+</div>
+
+<div class="wrap hidden" id="s-track">
+  <div class="pill" id="trackPicker" onclick="toggleTrackMenu()">🌿 <span id="trackName">加载中…</span> <span style="margin-left:auto;color:var(--sub)">▾</span></div>
+  <div id="trackMenu"></div>
+  <div id="trackStatus"></div>
+  <div class="card" id="calCard">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px;">
+      <button class="btn ghost" onclick="stepMonth(-1)">‹</button>
+      <b id="calTitle"></b>
+      <button class="btn ghost" onclick="stepMonth(1)">›</button>
+    </div>
+    <div class="cal" id="calGrid"></div>
+    <div style="font-size:11px;color:var(--sub);margin-top:8px;">
+      <span class="up">↑ 好转</span>　<span class="down">↓ 恶化</span>　— 持平　□ 今天
+    </div>
+  </div>
+  <h2>历次记录</h2>
+  <div id="recList"></div>
+  <input type="file" id="trackFile" accept="image/*" class="hidden" onchange="uploadTrack(this)">
+</div>
+
+<div class="wrap hidden" id="s-community">
+  <div class="row" style="justify-content:space-between;margin-bottom:10px;">
+    <h1 style="margin:0;">💬 社区</h1>
+    <button class="btn" onclick="showCompose()">＋ 发帖</button>
+  </div>
+  <div class="posts" id="postList"></div>
+  <div class="err" id="cErr"></div>
+</div>
+
+<div class="tabs">
+  <button class="on" data-s="identify" onclick="switchTab('identify')"><span class="ico">🔍</span>识别</button>
+  <button data-s="graft" onclick="switchTab('graft')"><span class="ico">🌱</span>嫁接</button>
+  <button data-s="track" onclick="switchTab('track')"><span class="ico">📅</span>追踪</button>
+  <button data-s="community" onclick="switchTab('community')"><span class="ico">💬</span>社区</button>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// 从后端 /test/ 打开时自动用同源地址；本地双击打开时手填
+if (location.pathname.startsWith('/test')) {
+  $('apiBase').value = location.origin;
+}
+const API = () => $('apiBase').value.replace(/\/$/, '');
+const pad = (n) => String(n).padStart(2, '0');
+const TODAY = new Date();
+let view = { y: TODAY.getFullYear(), m: TODAY.getMonth() + 1 };
+let tracks = [], currentTrack = null, trackDetail = null, varieties = [];
+
+async function api(path, opts = {}) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 60000);
+  try {
+    const res = await fetch(API() + path, { ...opts, signal: ctrl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text().catch(() => '')).slice(0, 160)}`);
+    return res.json();
+  } finally { clearTimeout(t); }
+}
+
+function filePart(f, name) {
+  // 浏览器 File 直接可放 FormData；RN 端才是 {uri,name,type}
+  return f;
+}
+
+async function ping() {
+  try {
+    const h = await api('/health');
+    $('healthBadge').textContent = `已连接 · 识别模式: ${h.identifier}${h.disease_gate ? ' · 门控阈值 ' + h.disease_gate : ''}`;
+    varieties = await api('/varieties');
+    const opts = varieties.map((v) => `<option>${v.name}</option>`).join('');
+    $('gScionV').innerHTML = opts; $('gRootV').innerHTML = opts;
+    loadTracks(); loadPosts();
+  } catch (e) { $('healthBadge').textContent = '连接失败：' + e.message; }
+}
+
+/* ───── 识别 ───── */
+$('idFile').addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const p = $('idPreview'); p.src = URL.createObjectURL(f); p.classList.remove('hidden');
+});
+
+async function runIdentify() {
+  const f = $('idFile').files[0];
+  if (!f) { $('idErr').textContent = '先选一张图片'; return; }
+  $('idErr').textContent = ''; $('idGo').disabled = true;
+  const fd = new FormData();
+  fd.append('task_type', 'plant_identify');
+  fd.append('image', filePart(f));
+  try {
+    const r = await api('/analyze', { method: 'POST', body: fd });
+    const d = r.disease;
+    const state = d.label === 'healthy' ? '健康' : d.label === 'diseased' ? '疑似病害' : '不在识别范围';
+    const color = d.label === 'healthy' ? 'var(--green-d)' : d.label === 'diseased' ? 'var(--red)' : '#5F5E5A';
+    const cands = (r.candidates && r.candidates.length)
+      ? `<div class="card"><b style="color:#ef6c00">其他相似疑似</b><p class="sug" style="margin-top:6px">${
+          r.candidates.map(c => `${c.label} · ${(c.confidence * 100).toFixed(0)}%`).join('<br>')
+        }</p></div>` : '';
+    $('idResult').innerHTML = `
+      <div class="card">
+        <div class="line"><span class="k">物种</span><span class="v">${r.species.label} · ${(r.species.confidence * 100).toFixed(0)}%</span></div>
+        <div class="line"><span class="k">病害</span><span class="v" style="color:${color}">${state}${d.name ? ' · ' + d.name : ''}${d.confidence != null ? ' · ' + (d.confidence * 100).toFixed(0) + '%' : ''}</span></div>
+      </div>
+      ${cands}
+      <div class="card"><b style="color:var(--green-d)">处理建议</b><p class="sug" style="margin-top:6px">${r.suggestion}</p></div>`;
+  } catch (e) { $('idErr').textContent = e.message; }
+  $('idGo').disabled = false;
+}
+
+/* ───── 嫁接 ───── */
+async function runGraft() {
+  const s = $('gScion').files[0], rt = $('gRoot').files[0];
+  if (!s || !rt) { $('gErr').textContent = '两张图都要选'; return; }
+  $('gErr').textContent = ''; $('gGo').disabled = true;
+  const fd = new FormData();
+  fd.append('task_type', 'graft_screen');
+  fd.append('scion_image', filePart(s)); fd.append('rootstock_image', filePart(rt));
+  fd.append('scion_variety', $('gScionV').value); fd.append('rootstock_variety', $('gRootV').value);
+  if ($('gTemp').value) fd.append('temperature', $('gTemp').value);
+  if ($('gSoil').value) fd.append('soil_type', $('gSoil').value);
+  try {
+    const r = await api('/analyze', { method: 'POST', body: fd });
+    const tierColors = {
+      recommend: ['#E8F5E9', '#2e7d32'], cautious: ['#FFF8E1', '#f9a825'],
+      defer: ['#FFF3E0', '#ef6c00'], not_recommend: ['#FFEBEE', '#c62828'], retake: ['#EEEEEE', '#616161'],
+    };
+    const [bg, fg] = tierColors[r.decision.code] || ['#EEE', '#666'];
+    const d = r.disease;
+    const fmt = (x) => x.label === 'unknown' ? '不在识别范围'
+      : `${x.label === 'healthy' ? '健康' : '疑似病害'} · ${(x.confidence * 100).toFixed(0)}%`;
+    $('gResult').innerHTML = `
+      <div class="tier" style="background:${bg};color:${fg}">${r.decision.label}</div>
+      <div class="card"><p style="font-size:14px;line-height:1.6">${r.decision.explanation}</p></div>
+      <div class="card">
+        <div class="line"><span class="k">接穗</span><span class="v">${fmt(d.scion)}</span></div>
+        <div class="line"><span class="k">砧木</span><span class="v">${fmt(d.rootstock)}</span></div>
+        ${r.compatibility.known
+          ? `<div class="line"><span class="k">兼容分</span><span class="v">${r.compatibility.score}/100（科属 ${r.compatibility.breakdown.family_genus} + 温度 ${r.compatibility.breakdown.temperature} + 土壤 ${r.compatibility.breakdown.soil}）</span></div>`
+          : `<div class="line"><span class="k">兼容分</span><span class="v">品种未收录，无法判断</span></div>`}
+      </div>`;
+  } catch (e) { $('gErr').textContent = e.message; }
+  $('gGo').disabled = false;
+}
+
+/* ───── 追踪 ───── */
+async function loadTracks(prefer) {
+  try {
+    tracks = await api('/tracks');
+    currentTrack = tracks.find((t) => t.id === prefer) || tracks[0] || null;
+    $('trackName').textContent = currentTrack ? currentTrack.name : '还没有追踪，点下方新建';
+    $('trackMenu').innerHTML = tracks.map((t) =>
+      `<div class="pill" onclick="pickTrack('${t.id}')">${t.id === (currentTrack || {}).id ? '✓ ' : ''}${t.name}</div>`).join('') +
+      `<div class="pill" onclick="createTrackPrompt()" style="color:var(--green-d)">＋ 新建追踪</div>`;
+    if (currentTrack) trackDetail = await api(`/tracks/${currentTrack.id}`);
+    else trackDetail = null;
+    renderTrack();
+  } catch (e) { $('trackStatus').innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+function toggleTrackMenu() {
+  const m = $('trackMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function pickTrack(id) { $('trackMenu').style.display = 'none'; loadTracks(id); }
+
+async function createTrackPrompt() {
+  const name = prompt('植物名称（如 番茄 · 2号盆）');
+  if (!name) return;
+  const crop = prompt('作物（可选）') || '';
+  try {
+    const t = await api('/tracks', { method: 'POST', body: fdFrom({ name, crop }) });
+    await loadTracks(t.track_id);
+  } catch (e) { alert(e.message); }
+}
+
+function fdFrom(obj) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(obj)) if (v) fd.append(k, v);
+  return fd;
+}
+
+function renderTrack() {
+  const el = $('trackStatus'), calTitle = $('calTitle'), grid = $('calGrid'), list = $('recList');
+  if (!trackDetail) { el.innerHTML = ''; calTitle.textContent = ''; grid.innerHTML = ''; list.innerHTML = ''; return; }
+  el.innerHTML = `<div class="card" style="margin-top:10px;"><div style="font-size:18px;font-weight:800;color:var(--green-d)">${trackDetail.verdict}</div><p style="font-size:13px;line-height:1.6;margin-top:6px">${trackDetail.explanation}</p></div>`;
+  calTitle.textContent = `${view.y} 年 ${view.m} 月`;
+  const recs = trackDetail.records || [];
+  const byDate = {};
+  recs.forEach((r, i) => {
+    let arrow = 'start';
+    const prev = recs[i - 1];
+    if (prev && r.disease_confidence != null && prev.disease_confidence != null) {
+      arrow = r.disease_confidence < prev.disease_confidence ? 'up' : r.disease_confidence > prev.disease_confidence ? 'down' : 'flat';
+    }
+    byDate[r.date] = { ...r, arrow };
+  });
+  const first = new Date(view.y, view.m - 1, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const days = new Date(view.y, view.m, 0).getDate();
+  const marks = { up: '↑', down: '↓', flat: '—', start: '·' };
+  let html = ['一', '二', '三', '四', '五', '六', '日'].map((w) => `<div class="wd">${w}</div>`).join('');
+  for (let i = 0; i < offset; i++) html += '<div></div>';
+  const iso = (d) => `${view.y}-${pad(view.m)}-${pad(d)}`;
+  for (let d = 1; d <= days; d++) {
+    const rec = byDate[iso(d)];
+    const today = iso(d) === `${TODAY.getFullYear()}-${pad(TODAY.getMonth() + 1)}-${pad(TODAY.getDate())}`;
+    html += `<div class="day${today ? ' today' : ''}"><span>${d}</span>${rec ? `<span class="mk ${rec.arrow === 'down' ? 'down' : 'up'}" ${rec.arrow === 'flat' ? 'style="color:#5F5E5A"' : ''}>${marks[rec.arrow]}</span>` : ''}</div>`;
+  }
+  grid.innerHTML = html;
+  list.innerHTML = recs.slice().reverse().map((r) => {
+    const a = byDate[r.date].arrow;
+    return `<div class="rec"><span class="d">${r.date}</span><span>${r.disease_name || '未知'} · ${r.disease_confidence != null ? (r.disease_confidence * 100).toFixed(0) + '%' : '—'}</span><span class="arrow ${a === 'down' ? 'down' : 'up'}">${marks[a]}</span></div>`;
+  }).join('') || '<div class="hint">还没有记录，右下角 📷 上传一张</div>';
+}
+
+function stepMonth(delta) {
+  view.m += delta;
+  if (view.m < 1) { view.m = 12; view.y--; }
+  if (view.m > 12) { view.m = 1; view.y++; }
+  renderTrack();
+}
+
+async function uploadTrack(input) {
+  const f = input.files[0];
+  if (!f || !currentTrack) return;
+  const fd = new FormData();
+  fd.append('task_type', 'recovery_track');
+  fd.append('track_id', currentTrack.id);
+  fd.append('image', filePart(f));
+  try {
+    const r = await api('/analyze', { method: 'POST', body: fd });
+    alert(`本次识别：${r.current.species.label}\n${r.current.disease.label === 'healthy' ? '健康' : '疑似 ' + (r.current.disease.name || '病害')}\n判定：${r.verdict}\n${r.explanation}`);
+    trackDetail = await api(`/tracks/${currentTrack.id}`);
+    renderTrack();
+  } catch (e) { alert(e.message); }
+  input.value = '';
+}
+
+/* ───── 社区 ───── */
+async function loadPosts() {
+  try {
+    const posts = await api('/posts?limit=20');
+    $('postList').innerHTML = posts.map((p) => `
+      <div class="pcard" onclick="openPost(${p.id})">
+        <div class="cov" style="background:${tint(p.image_emoji)}">${p.image_emoji || '🌿'}</div>
+        <div class="tt">${p.title}</div>
+        <div class="mt"><span>${p.nickname}</span><span>♡${p.likes} 💬${p.comment_count}</span></div>
+      </div>`).join('') || '<div class="hint">还没有帖子</div>';
+  } catch (e) { $('cErr').textContent = e.message; }
+}
+function tint(e) { const map = ['#EAF6DF', '#FFF6D6', '#FFEAD1', '#E4F0FA']; return map[(e || '🌿').codePointAt(0) % 4]; }
+
+async function openPost(id) {
+  try {
+    const p = await api(`/posts/${id}`);
+    const html = `
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <b>${p.title}</b>
+          <button class="btn ghost" onclick="closePost()">‹ 返回</button>
+        </div>
+        <p style="font-size:11px;color:var(--sub);margin:4px 0 10px">${p.nickname} · ${p.created_at.slice(0, 16).replace('T', ' ')}</p>
+        <p style="font-size:14px;line-height:1.7">${p.body}</p>
+        <div class="row" style="margin-top:12px;gap:14px;">
+          <button class="btn alt" onclick="likePost(${p.id})">♡ 点赞 (${p.likes})</button>
+          <span class="badge">💬 ${p.comments.length} 条评论</span>
+        </div>
+        <div style="margin-top:12px">
+          ${p.comments.map((c) => `<div class="cmt"><span class="n">${c.nickname}</span><span>${c.body}<br><span style="font-size:11px;color:var(--sub)">${c.created_at.slice(5, 16).replace('T', ' ')}</span></span></div>`).join('') || '<div class="hint">还没有评论</div>'}
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <input type="text" id="cmtNick" placeholder="昵称" style="width:90px;flex:none;margin:0;">
+          <input type="text" id="cmtBody" placeholder="说点什么…" style="margin:0;">
+          <button class="btn" onclick="sendComment(${p.id})">发送</button>
+        </div>
+        <div class="err" id="pErr"></div>
+      </div>`;
+    $('postList').innerHTML = `<div style="grid-column:1/-1">${html}</div>`;
+  } catch (e) { $('cErr').textContent = e.message; }
+}
+function closePost() { loadPosts(); }
+
+async function likePost(id) {
+  try { await api(`/posts/${id}/like`, { method: 'POST' }); openPost(id); loadPosts(); }
+  catch (e) { $('pErr').textContent = e.message; }
+}
+async function sendComment(id) {
+  const n = $('cmtNick').value.trim(), b = $('cmtBody').value.trim();
+  if (!n || !b) { $('pErr').textContent = '昵称和评论都要填'; return; }
+  try {
+    await api(`/posts/${id}/comments`, { method: 'POST', body: fdFrom({ nickname: n, body: b }) });
+    openPost(id);
+  } catch (e) { $('pErr').textContent = e.message; }
+}
+function showCompose() {
+  const nick = prompt('昵称（匿名，随便起）');
+  if (!nick) return;
+  const title = prompt('标题');
+  if (!title) return;
+  const body = prompt('正文');
+  if (!body) return;
+  api('/posts', { method: 'POST', body: fdFrom({ nickname: nick, title, body, image_emoji: '🌿' }) })
+    .then(loadPosts).catch((e) => alert(e.message));
+}
+
+/* ───── tab 切换 + 悬浮按钮 ───── */
+function switchTab(s) {
+  document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.s === s));
+  ['identify', 'graft', 'track', 'community'].forEach((x) => $('s-' + x).classList.toggle('hidden', x !== s));
+  if (s === 'track' && !trackDetail && tracks.length) loadTracks();
+}
+
+// 追踪页悬浮拍照按钮：创建一个隐藏 file input
+const fab = document.createElement('button');
+fab.className = 'fab'; fab.textContent = '📷'; fab.title = '拍照上传今日记录';
+fab.onclick = () => {
+  if (!currentTrack) { alert('先新建一个追踪'); return; }
+  $('trackFile').click();
+};
+document.body.appendChild(fab);
+
+ping();
+</script>
+</body>
+</html>

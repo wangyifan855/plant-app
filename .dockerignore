@@ -1,0 +1,10 @@
+# 构建上下文只需要后端的代码、模型和配置，其余一律排除，
+# 免得把前端 node_modules（几百 MB）也打进构建上下文。
+frontend
+prototype
+.git
+backend/data
+**/__pycache__
+**/*.pyc
+**/.DS_Store
+*.md

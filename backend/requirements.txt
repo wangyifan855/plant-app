@@ -1,0 +1,12 @@
+# Web 框架
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+# 图像处理与数值
+pillow==12.3.0
+numpy==2.5.3
+# 深度学习：部署平台会自动拉对应系统的 CPU 版 wheel，
+# 这里不要写 +cpu 后缀，否则 PyPI 找不到包。
+torch
+torchvision
+timm==1.0.30

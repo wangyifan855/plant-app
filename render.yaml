@@ -1,0 +1,22 @@
+# Render Blueprint：免费 Web Service（Docker 部署）
+# 用法：Render 控制台 → New → Blueprint → 连接 GitHub 仓库 → 选本文件即可一键建服务
+services:
+  - type: web
+    name: graftcheck-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    region: oregon            # free 档可选区域有限，选离你近的；如新加坡可用 singapore
+    healthCheckPath: /health
+    envVars:
+      - key: IDENTIFIER
+        value: model
+      - key: DISEASE_MODEL
+        value: /app/model        # 构建期已下进镜像的 PlantVillage 权重目录
+      - key: HF_HUB_OFFLINE
+        value: "1"
+      - key: TRANSFORMERS_OFFLINE
+        value: "1"
+      - key: CONFIG_DIR
+        value: /app/config
+      # Render 会自动注入 PORT，容器内 uvicorn 读 ${PORT:-8000}，无需手动设

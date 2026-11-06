@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "description": "嫁接兼容性评分（后端）与品种下拉（前端）共用的单一数据源。仅收录病害模型覆盖的 14 种作物（对应模型 38 类）。字段：name 中文名 / model_prefix 模型类名前缀 / family 科 / genus 属 / temp_range 适宜温区(℃) / soil_pref 土壤偏好。",
+  "varieties": [
+    {"name": "番茄", "model_prefix": "Tomato", "family": "茄科", "genus": "番茄属", "temp_range": "20-27", "soil_pref": "疏松肥沃、排水良好"},
+    {"name": "马铃薯", "model_prefix": "Potato", "family": "茄科", "genus": "茄属", "temp_range": "15-20", "soil_pref": "疏松砂壤"},
+    {"name": "甜椒", "model_prefix": "Pepper", "family": "茄科", "genus": "辣椒属", "temp_range": "20-30", "soil_pref": "肥沃、排水良好"},
+    {"name": "苹果", "model_prefix": "Apple", "family": "蔷薇科", "genus": "苹果属", "temp_range": "15-24", "soil_pref": "微酸性、排水良好"},
+    {"name": "樱桃", "model_prefix": "Cherry", "family": "蔷薇科", "genus": "樱属", "temp_range": "15-24", "soil_pref": "砂壤、微酸"},
+    {"name": "桃", "model_prefix": "Peach", "family": "蔷薇科", "genus": "桃属", "temp_range": "18-25", "soil_pref": "砂壤"},
+    {"name": "葡萄", "model_prefix": "Grape", "family": "葡萄科", "genus": "葡萄属", "temp_range": "20-30", "soil_pref": "砂砾土、排水好"},
+    {"name": "玉米", "model_prefix": "Corn", "family": "禾本科", "genus": "玉蜀黍属", "temp_range": "22-30", "soil_pref": "肥沃、湿润"},
+    {"name": "蓝莓", "model_prefix": "Blueberry", "family": "杜鹃花科", "genus": "越橘属", "temp_range": "15-25", "soil_pref": "酸性土"},
+    {"name": "树莓", "model_prefix": "Raspberry", "family": "蔷薇科", "genus": "悬钩子属", "temp_range": "15-22", "soil_pref": "微酸、排水良好"},
+    {"name": "大豆", "model_prefix": "Soybean", "family": "豆科", "genus": "大豆属", "temp_range": "20-30", "soil_pref": "肥沃"},
+    {"name": "南瓜", "model_prefix": "Squash", "family": "葫芦科", "genus": "南瓜属", "temp_range": "20-30", "soil_pref": "肥沃、湿润"},
+    {"name": "草莓", "model_prefix": "Strawberry", "family": "蔷薇科", "genus": "草莓属", "temp_range": "15-22", "soil_pref": "微酸、疏松"},
+    {"name": "柑橘", "model_prefix": "Orange", "family": "芸香科", "genus": "柑橘属", "temp_range": "23-30", "soil_pref": "微酸、排水良好"}
+  ]
+}
