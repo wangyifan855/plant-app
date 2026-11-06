@@ -37,3 +37,4 @@ Thumbs.db
 # 注：backend/models/plantnet/plantnet_resnet18.pth（约 45MB）需要保留在仓库里，
 # 因为 backend/Dockerfile 用 COPY backend/models 把物种模型打进镜像。
 # 若日后想减小仓库体积，可改用 git-lfs 或改成构建期下载。
+frontend/scripts/.tokens.json

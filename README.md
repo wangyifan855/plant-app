@@ -61,11 +61,25 @@
 
 ## 界面展示
 
+### 手机端
+
 | 首页 | 诊断 | 发现 |
 |:---:|:---:|:---:|
 | ![首页](docs/screenshots/home.png) | ![诊断](docs/screenshots/identify.png) | ![发现](docs/screenshots/discover.png) |
-| **我的花园** | **个人资料** | |
-| ![我的花园](docs/screenshots/garden.png) | ![个人资料](docs/screenshots/profile.png) | |
+| **我的花园** | **个人资料** | **登录 / 注册** |
+| ![我的花园](docs/screenshots/garden.png) | ![个人资料](docs/screenshots/profile.png) | ![登录](docs/screenshots/login.png) |
+
+### 电脑端（网页版响应式适配：左侧导航栏 + 内容居中，窗口拖拽自动跟随）
+
+| PC 首页（两栏概览） | PC 发现（四列瀑布流） |
+|:---:|:---:|
+| ![PC 首页](docs/screenshots/pc_home.png) | ![PC 发现](docs/screenshots/pc_discover.png) |
+
+### 管理员后台（`/admin/`，独立网页）
+
+| 数据看板 + 用户治理 + 帖子下架/恢复 |
+|:---:|
+| ![管理后台](docs/screenshots/admin.png) |
 
 ## 快速开始
 
