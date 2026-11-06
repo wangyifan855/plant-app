@@ -59,27 +59,15 @@
 - **用户 / 社交**：`GET /profile`、`POST /profile/update`（昵称 + 头像压 256px）、`POST /users/{user_id}/follow`、`GET /notifications`、`GET /notifications/unread_count`、`POST /notifications/read`
 - **管理端**（role=admin）：`GET /api/admin/stats`、`GET /api/admin/users`、`DELETE /api/admin/users/{uid}`、`POST /api/admin/users/{uid}/role`、`GET /api/admin/posts`、`DELETE /api/admin/posts/{pid}`、`POST /api/admin/posts/{pid}/takedown`、`POST /api/admin/posts/{pid}/restore`、`DELETE /api/admin/comments/{cid}`
 
-## 界面展示
-
-### 手机端
+## 界面展示（移动端）
 
 | 首页 | 诊断 | 发现 |
 |:---:|:---:|:---:|
 | ![首页](docs/screenshots/home.png) | ![诊断](docs/screenshots/identify.png) | ![发现](docs/screenshots/discover.png) |
-| **我的花园** | **个人资料** | **登录 / 注册** |
-| ![我的花园](docs/screenshots/garden.png) | ![个人资料](docs/screenshots/profile.png) | ![登录](docs/screenshots/login.png) |
-
-### 电脑端（网页版响应式适配：左侧导航栏 + 内容居中，窗口拖拽自动跟随）
-
-| PC 首页（两栏概览） | PC 发现（四列瀑布流） |
-|:---:|:---:|
-| ![PC 首页](docs/screenshots/pc_home.png) | ![PC 发现](docs/screenshots/pc_discover.png) |
-
-### 管理员后台（`/admin/`，独立网页）
-
-| 数据看板 + 用户治理 + 帖子下架/恢复 |
-|:---:|
-| ![管理后台](docs/screenshots/admin.png) |
+| **我的花园** | **个人资料** | **健康追踪** |
+| ![我的花园](docs/screenshots/garden.png) | ![个人资料](docs/screenshots/profile.png) | ![健康追踪](docs/screenshots/track.png) |
+| **发笔记** | **帖子管理** | |
+| ![发笔记](docs/screenshots/compose.png) | ![帖子管理](docs/screenshots/post_actions.png) | |
 
 ## 快速开始
 
