@@ -12,6 +12,7 @@ import { API_URL } from '../lib/config';
 import { fmtDateTime, fmtMonthDay } from '../lib/time';
 import { C } from '../lib/theme';
 import PageBackground from '../components/PageBackground';
+import TypewriterText from '../components/TypewriterText';
 
 const MASCOT = require('../assets/mascot_identify.png');
 
@@ -25,31 +26,6 @@ function diagBadge(d) {
   if (d.disease_label === 'diseased' && d.low_confidence) return { text: '需关注', color: '#B45309', bg: '#FBF3D9' };
   if (d.disease_label === 'diseased') return { text: '异常', color: '#C2410C', bg: '#FDEBDD' };
   return { text: '观察中', color: '#8A6D1A', bg: '#FBF3D9' };
-}
-
-// 打字机气泡：segments = [{ text, style }]，逐字输出，加粗/样式保留
-function TypewriterBubble({ segments, style, speed = 55 }) {
-  const total = segments.reduce((n, s) => n + s.text.length, 0);
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (count >= total) return undefined;
-    const t = setTimeout(() => setCount((c) => Math.min(c + 1, total)), speed);
-    return () => clearTimeout(t);
-  }, [count, total, speed]);
-  let left = count;
-  const parts = [];
-  for (let i = 0; i < segments.length && left > 0; i++) {
-    const take = Math.min(left, segments[i].text.length);
-    parts.push(<Text key={i} style={segments[i].style}>{segments[i].text.slice(0, take)}</Text>);
-    left -= take;
-  }
-  const done = count >= total;
-  return (
-    <Text style={style}>
-      {parts}
-      {!done && <Text style={{ color: C.green }}>▌</Text>}
-    </Text>
-  );
 }
 
 // 识别 tab：单图 → 物种 + 病害 + 建议文案（task_type=plant_identify）+ 最近诊断
@@ -159,7 +135,7 @@ export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenP
         <View style={styles.mascotRow}>
         <Image source={MASCOT} style={styles.mascot} />
         <View style={styles.bubble}>
-          <TypewriterBubble
+          <TypewriterText
             style={styles.bubbleText}
             segments={[
               { text: '我是 ' },

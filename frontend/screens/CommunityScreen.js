@@ -10,6 +10,7 @@ import { API_URL } from '../lib/config';
 import { fmtDateTime } from '../lib/time';
 import SmartImage from '../components/SmartImage';
 import PageBackground from '../components/PageBackground';
+import TypewriterText from '../components/TypewriterText';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
 
@@ -88,8 +89,15 @@ export default function CommunityScreen({ focusPostId, onFocusConsumed, onGoProf
       <View style={styles.welcome}>
         <Image source={MASCOT_COMMUNITY} style={styles.welcomeMascot} resizeMode="contain" />
         <View style={{ flex: 1 }}>
-          <Text style={styles.welcomeTitle}>和大家聊聊种植日常</Text>
-          <Text style={styles.welcomeSub}>看看别人的月季、番茄怎么养，也发发你的心得</Text>
+          <TypewriterText
+            style={styles.welcomeTitle}
+            segments={[{ text: '和大家聊聊种植日常' }]}
+          />
+          <TypewriterText
+            style={styles.welcomeSub}
+            delay={900}
+            segments={[{ text: '看看别人的月季、番茄怎么养，也发发你的心得' }]}
+          />
         </View>
       </View>
 
