@@ -1,14 +1,14 @@
-// 满屏点赞/庆祝动效（微信式）：元素从屏幕顶部飘落到底部，悬浮在内容之上，约 3s 自动消失。
-// 不重叠策略：屏幕横向切成 7 列，每个元素独占一列（列内 x 基本固定）；同列两个元素
+// 满屏点赞/庆祝动效（微信式）：元素从屏幕顶部飘落到底部，悬浮在内容之上，约 4.8s 自动消失。
+// 不重叠策略：屏幕横向切成 9 列，每个元素独占一列（列内 x 基本固定）；同列两个元素
 // 错开出发时间（第二个等第一个落到中下段才出发），保证同列不追尾、跨列不相撞。
 import React, { useEffect, useState } from 'react';
 import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
 
 const EMOJIS = ['👍', '❤️', '🌿', '🎉', '💚', '✨', '⭐'];
-const COLS = 7;          // 横向列数
-const FALL = 2000;       // 单个元素从顶落到底的时长
+const COLS = 9;          // 横向列数
+const FALL = 3200;       // 单个元素从顶落到底的时长（放慢更有漂浮感）
 
-export default function LikeBurst({ duration = 3000, onDone }) {
+export default function LikeBurst({ duration = 4800, onDone }) {
   const { height, width } = Dimensions.get('window');
   const [particles] = useState(() => {
     // 洗牌列顺序，让每次出发的列不一样
@@ -90,7 +90,7 @@ export default function LikeBurst({ duration = 3000, onDone }) {
             opacity: p.op,
           }}
         >
-          <Text style={{ fontSize: 30 }}>{p.e}</Text>
+          <Text style={{ fontSize: 26 }}>{p.e}</Text>
         </Animated.View>
       ))}
     </View>
