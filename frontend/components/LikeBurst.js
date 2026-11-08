@@ -1,14 +1,15 @@
-// 满屏点赞/庆祝动效（微信式）：元素从屏幕顶部飘落到底部，悬浮在内容之上，约 4.8s 自动消失。
-// 不重叠策略：屏幕横向切成 9 列，每个元素独占一列（列内 x 基本固定）；同列两个元素
-// 错开出发时间（第二个等第一个落到中下段才出发），保证同列不追尾、跨列不相撞。
+// 满屏点赞/庆祝动效（微信式）：元素从屏幕顶部飘落到底部，悬浮在内容之上，约 6.5s 自动消失。
+// 不重叠策略：屏幕横向切成 9 列，每个元素独占一列（列内 x 基本固定）；同列 4 个元素
+// 错开出发时间（分成 4 排依次下落），保证同列不追尾、跨列不相撞。
 import React, { useEffect, useState } from 'react';
 import { View, Text, Animated, StyleSheet, Dimensions } from 'react-native';
 
 const EMOJIS = ['👍', '❤️', '🌿', '🎉', '💚', '✨', '⭐'];
 const COLS = 9;          // 横向列数
-const FALL = 3200;       // 单个元素从顶落到底的时长（放慢更有漂浮感）
+const LANES = 4;         // 每列 4 个波次 → 视觉上 4 排错落下落
+const FALL = 3400;       // 单个元素从顶落到底的时长（放慢更有漂浮感）
 
-export default function LikeBurst({ duration = 4800, onDone }) {
+export default function LikeBurst({ duration = 6600, onDone }) {
   const { height, width } = Dimensions.get('window');
   const [particles] = useState(() => {
     // 洗牌列顺序，让每次出发的列不一样
@@ -19,14 +20,14 @@ export default function LikeBurst({ duration = 4800, onDone }) {
     }
     const colW = width / COLS;
     return cols.flatMap((col, idx) =>
-      [0, 1].map((lane) => ({
-        id: idx * 2 + lane,
+      Array.from({ length: LANES }).map((_, lane) => ({
+        id: idx * LANES + lane,
         e: EMOJIS[(idx * 3 + lane) % EMOJIS.length],
         x: col * colW + colW / 2 - 17 + (Math.random() * 12 - 6), // 列内只留极小抖动
         scale: 0.85 + Math.random() * 0.5,
         rot: (Math.random() - 0.5) * 34,
-        // 第一波几乎同时出发；第二波等第一波落到中下段（不追尾）才出发
-        delay: lane === 0 ? Math.random() * 220 : FALL * 0.45 + Math.random() * 220,
+        // 4 排依次出发：相邻排错开 FALL*0.26，让任意时刻屏幕都有 4 排错落分布
+        delay: lane * FALL * 0.26 + Math.random() * 160,
         swayAmp: 10 + Math.random() * 10, // 左右摆动幅度
         y: new Animated.Value(-60),
         op: new Animated.Value(0),
