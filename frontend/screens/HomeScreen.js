@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { getHome, getTodos, getNotifications, getUnreadCount, markNotificationsRead, createPlantTrack } from '../lib/api';
 import PageBackground from '../components/PageBackground';
+import LikeBurst from '../components/LikeBurst';
 import PlantDetailScreen from './PlantDetailScreen';
 import { API_URL } from '../lib/config';
 import SmartImage from '../components/SmartImage';
@@ -99,7 +100,7 @@ function saveDone(list) {
 }
 
 // 任务清单弹窗：今日全部待办，可勾选完成、可跳去处理
-function TodosModal({ visible, onClose, user, onGoTab, onHandle }) {
+function TodosModal({ visible, onClose, user, onGoTab, onHandle, onCelebrate }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState('');
   const [done, setDone] = useState([]);
@@ -123,9 +124,11 @@ function TodosModal({ visible, onClose, user, onGoTab, onHandle }) {
 
   const toggle = (item) => {
     const k = doneKeyOf(item);
-    const next = done.includes(k) ? done.filter((x) => x !== k) : [...done, k];
+    const wasDone = done.includes(k);
+    const next = wasDone ? done.filter((x) => x !== k) : [...done, k];
     setDone(next);
     saveDone(next);
+    if (!wasDone && onCelebrate) onCelebrate(); // 勾选完成才放满屏点赞
   };
 
   const total = items?.length ?? 0;
@@ -341,6 +344,7 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
   const [notifOpen, setNotifOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [todoOpen, setTodoOpen] = useState(false);
+  const [likeBurst, setLikeBurst] = useState(false); // 完成待办触发的满屏点赞
   const [detailId, setDetailId] = useState(null); // 首页植物卡 → 植物档案
 
   // 从追踪页返回时，重新打开刚才那株植物的档案
@@ -598,6 +602,7 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
         user={user}
         onGoTab={onGoTab}
         onHandle={handleTodo}
+        onCelebrate={() => setLikeBurst(true)}
       />
 
       {/* 植物档案（点首页植物卡直达，与花园页同一组件） */}
@@ -608,6 +613,9 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
         onGoIdentify={(plant) => { setDetailId(null); onGoIdentifyPlant && onGoIdentifyPlant(plant); }}
         onChanged={load}
       />
+
+      {/* 完成待办：满屏点赞飘散，约 2.5 秒 */}
+      {likeBurst && <LikeBurst onDone={() => setLikeBurst(false)} />}
     </View>
   );
 }
