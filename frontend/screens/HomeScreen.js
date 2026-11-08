@@ -4,6 +4,7 @@ import {
   Modal, FlatList,
 } from 'react-native';
 import { getHome, getTodos, getNotifications, getUnreadCount, markNotificationsRead, createPlantTrack } from '../lib/api';
+import PageBackground from '../components/PageBackground';
 import PlantDetailScreen from './PlantDetailScreen';
 import { API_URL } from '../lib/config';
 import SmartImage from '../components/SmartImage';
@@ -459,6 +460,7 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
 
   return (
     <View style={styles.root}>
+      <PageBackground variant="green" />
       <ScrollView contentContainerStyle={[styles.scroll, isDesktop && styles.scrollPc]} showsVerticalScrollIndicator={false}>
         {/* 头部 */}
         <View style={styles.header}>

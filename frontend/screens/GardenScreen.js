@@ -5,6 +5,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { compressImage } from '../lib/compress';
 import { listGarden, addPlant, createPlantTrack, uploadPlantPhoto } from '../lib/api';
+import PageBackground from '../components/PageBackground';
 import PlantDetailScreen from './PlantDetailScreen';
 import SmartImage from '../components/SmartImage';
 import { CROPS } from '../lib/crops';
@@ -126,6 +127,7 @@ export default function GardenScreen({ user, onOpenTrack, onGoIdentify, openPlan
 
   return (
     <View style={styles.root}>
+      <PageBackground variant="green" />
       <View style={styles.header}>
         <View>
           {/* PC 上底部 tab 栏没了，给一条明确的回首页入口 */}

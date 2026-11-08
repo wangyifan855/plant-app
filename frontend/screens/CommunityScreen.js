@@ -9,6 +9,7 @@ import { compressImage } from '../lib/compress';
 import { API_URL } from '../lib/config';
 import { fmtDateTime } from '../lib/time';
 import SmartImage from '../components/SmartImage';
+import PageBackground from '../components/PageBackground';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
 
@@ -75,6 +76,7 @@ export default function CommunityScreen({ focusPostId, onFocusConsumed, onGoProf
 
   return (
     <View style={styles.root}>
+      <PageBackground variant="warm" />
       <View style={styles.header}>
         <Text style={styles.h1}>发现</Text>
         <TouchableOpacity style={styles.newBtn} onPress={tryCompose}>

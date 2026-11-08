@@ -11,6 +11,7 @@ import { FAQ, FAQ_MAIN } from '../lib/faq';
 import { API_URL } from '../lib/config';
 import { fmtDateTime, fmtMonthDay } from '../lib/time';
 import { C } from '../lib/theme';
+import PageBackground from '../components/PageBackground';
 
 const MASCOT = require('../assets/mascot_identify.png');
 
@@ -152,8 +153,10 @@ export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenP
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.mascotRow}>
+    <View style={{ flex: 1 }}>
+      <PageBackground variant="leaf" />
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.mascotRow}>
         <Image source={MASCOT} style={styles.mascot} />
         <View style={styles.bubble}>
           <TypewriterBubble
@@ -335,7 +338,8 @@ export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenP
           ) : null}
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -486,7 +490,7 @@ function ResultView({ result, image, user, onReset, linkedPlant, onOpenPlant }) 
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 40, backgroundColor: C.bg, flexGrow: 1 },
+  container: { padding: 16, paddingBottom: 40, flexGrow: 1 },
   mascotRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
   mascot: { width: 76, height: 76 },
   bubble: {

@@ -10,6 +10,7 @@ import { API_URL } from '../lib/config';
 import { fmtDateTime } from '../lib/time';
 import SmartImage from '../components/SmartImage';
 import LoginScreen from './LoginScreen';
+import PageBackground from '../components/PageBackground';
 import { ComposeModal } from './CommunityScreen';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
@@ -122,6 +123,7 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
 
   return (
     <View style={styles.root}>
+      <PageBackground variant="soft" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* 头像 + 昵称（铅笔进入编辑） */}
         <View style={styles.profileHead}>
