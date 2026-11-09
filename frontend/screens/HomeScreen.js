@@ -12,6 +12,7 @@ import Skeleton, { SkeletonRows } from '../components/Skeleton';
 import PlantDetailScreen from './PlantDetailScreen';
 import { API_URL } from '../lib/config';
 import SmartImage from '../components/SmartImage';
+import { avatarSource } from '../lib/avatar';
 import { CROPS } from '../lib/crops';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
@@ -291,7 +292,7 @@ function NotificationsModal({ visible, onClose, user, onGoTab, onOpenPost, onOpe
                 const body = (
                   <>
                     <SmartImage
-                      uri={item.actor_avatar ? `${API_URL}${item.actor_avatar}` : null}
+                      source={avatarSource(item.actor_avatar)}
                       style={nstyles.avatar}
                       fallback={(
                         <View style={nstyles.avatarFallback}>

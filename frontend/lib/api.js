@@ -194,13 +194,21 @@ export function getProfile() {
   return request('/profile');
 }
 
-// 更新个人资料：昵称和/或头像（都可选）
-export async function updateProfile({ nickname, image } = {}) {
+// 更新个人资料：昵称和/或头像（都可选）。
+// 头像两种给法：image 是自己上传的照片，preset 是预置造型的 key（如 'graft'）。
+// 同时给两个时以照片为准，避免后端存了个前后不一致的状态。
+export async function updateProfile({ nickname, image, preset } = {}) {
   const form = new FormData();
   if (nickname != null) form.append('nickname', nickname);
   if (image) await appendFile(form, 'avatar', image);
+  else if (preset) form.append('avatar_preset', preset);
   const r = await request('/profile/update', { method: 'POST', form });
-  return { ...r, absolute_avatar_url: r.avatar_url ? `${API_URL}${r.avatar_url}` : null };
+  // 预置头像是 preset:xxx 标记，拼上 API_URL 会变成坏地址，这里直接给 null
+  const isPreset = typeof r.avatar_url === 'string' && r.avatar_url.startsWith('preset:');
+  return {
+    ...r,
+    absolute_avatar_url: r.avatar_url && !isPreset ? `${API_URL}${r.avatar_url}` : null,
+  };
 }
 
 export async function healthCheck() {

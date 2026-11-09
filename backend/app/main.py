@@ -759,17 +759,33 @@ def profile(user: dict = Depends(get_current_user)):
     }
 
 
+# 可选的预置头像（就是前端那张吉祥物的几个造型）。
+# 存的是 `preset:<key>` 标记而不是图片文件：服务器不用为每个用户存一份副本，
+# 以后换画风前端重打包就行，老用户头像自动跟着变。
+AVATAR_PRESETS = {"identify", "graft", "community", "track", "carrot", "cucumber"}
+
+
 @app.post("/profile/update")
 async def profile_update(user: dict = Depends(get_current_user),
                          nickname: str | None = Form(None),
-                         avatar: UploadFile | None = File(None)):
-    """更新个人资料：昵称和/或头像（multipart，两者均可选）。"""
+                         avatar: UploadFile | None = File(None),
+                         avatar_preset: str | None = Form(None)):
+    """更新个人资料：昵称和/或头像（multipart，均可选）。
+
+    头像两种给法：传 avatar 文件（自己上传），或传 avatar_preset 选一个预置造型。
+    两个都传时以文件为准。
+    """
     avatar_url = None
     if avatar is not None and avatar.filename:
         data = await avatar.read()
         if len(data) > MAX_BYTES:
             raise HTTPException(status_code=413, detail="图片过大，最大 10MB")
         avatar_url = _save_avatar_photo(data, user["id"])
+    elif avatar_preset:
+        key = avatar_preset.strip()
+        if key not in AVATAR_PRESETS:
+            raise HTTPException(status_code=400, detail="没有这个预置头像")
+        avatar_url = f"preset:{key}"
     if nickname is None and avatar_url is None:
         raise HTTPException(status_code=400, detail="没有要更新的内容")
     try:

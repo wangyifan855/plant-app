@@ -12,6 +12,7 @@ import SmartImage from '../components/SmartImage';
 import FadeUp from '../components/FadeUp';
 import TapCard from '../components/TapCard';
 import { SkeletonRows } from '../components/Skeleton';
+import { AVATAR_PRESETS, avatarSource, presetKey, presetSource } from '../lib/avatar';
 import LoginScreen from './LoginScreen';
 import PageBackground from '../components/PageBackground';
 import { ComposeModal } from './CommunityScreen';
@@ -33,6 +34,7 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
   const [editing, setEditing] = useState(false);
   const [nick, setNick] = useState('');
   const [pickedImage, setPickedImage] = useState(null); // 本地预览 {uri}
+  const [pickedPreset, setPickedPreset] = useState(null); // 选中的预置造型 key
   const [saving, setSaving] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false); // 退出登录二次确认
   const [drafts, setDrafts] = useState([]);        // 草稿箱：被下架、待重发的帖子
@@ -72,15 +74,28 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
 
   const u = data?.user;
   const displayName = u?.nickname || u?.username || user.username;
-  // avatar_url 是后端相对路径（/files/uploads/...），拼成绝对地址给 Image 用
-  const avatarUri = u?.avatar_url
-    ? (u.avatar_url.startsWith('http') ? u.avatar_url : `${API_URL}${u.avatar_url}`)
-    : null;
+  // 头像是上传的照片就拼完整地址，是预置造型就返回打包好的本地图（见 lib/avatar.js）
+  const avatarSrc = avatarSource(u?.avatar_url);
+
+  // 弹层里的预览：刚上传的照片 > 刚选的造型 > 现有的头像 > 默认吉祥物
+  const previewSrc = pickedImage
+    ? { uri: pickedImage.uri }
+    : pickedPreset
+      ? presetSource(pickedPreset)
+      : (avatarSrc || MASCOT);
 
   function openEdit() {
     setNick(u?.nickname || '');
     setPickedImage(null);
+    // 当前头像本来就是某个预置造型的话，打开弹层时它就显示成选中态
+    setPickedPreset(presetKey(u?.avatar_url));
     setEditing(true);
+  }
+
+  // 点同一个造型再点一次就取消选中，方便已经选过的人反悔
+  function togglePreset(key) {
+    setPickedImage(null);
+    setPickedPreset((cur) => (cur === key ? null : key));
   }
 
   async function pickAvatar(source) {
@@ -95,6 +110,7 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
       : await ImagePicker.launchImageLibraryAsync(opts);
     if (res.canceled || !res.assets?.length) return;
     const asset = res.assets[0];
+    setPickedPreset(null); // 换成自己的照片，造型的选中态就撤掉
     try {
       const comp = await compressImage(asset.uri, asset.width, asset.height);
       setPickedImage(comp);
@@ -103,12 +119,17 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
 
   async function save() {
     if (saving) return;
+    const name = nick.trim();
+    // 昵称没填、也没挑新头像 —— 那就是什么都没改，直接关掉，
+    // 别让后端返回「没有要更新的内容」把人吓一跳
+    if (!name && !pickedImage && !pickedPreset) { setEditing(false); return; }
     setSaving(true);
     setError('');
     try {
       await updateProfile({
-        nickname: nick.trim() || undefined,
+        nickname: name || undefined,
         image: pickedImage || undefined,
+        preset: pickedPreset || undefined,
       });
       setEditing(false);
       await load();
@@ -132,7 +153,7 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
         <View style={styles.profileHead}>
           <TouchableOpacity style={styles.avatarWrap} onPress={openEdit}>
             <SmartImage
-              uri={avatarUri}
+              source={avatarSrc}
               style={styles.avatarImg}
               fallback={<View style={styles.avatar}><Image source={MASCOT} style={styles.avatarMascot} /></View>}
             />
@@ -158,11 +179,35 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
             <Text style={styles.modalTitle}>编辑资料</Text>
             <Text style={styles.modalHint}>头像和昵称以后随时都能改</Text>
 
-            <View style={{ alignItems: 'center', marginVertical: 14 }}>
-              <Image
-                source={pickedImage ? { uri: pickedImage.uri } : (avatarUri ? { uri: avatarUri } : MASCOT)}
-                style={styles.modalAvatar}
-              />
+            <View style={styles.avatarBlock}>
+              <Image source={previewSrc} style={styles.modalAvatar} />
+
+              <Text style={styles.presetTitle}>挑一个 Avo 形象</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.presetRow}
+              >
+                {AVATAR_PRESETS.map((p) => {
+                  const on = !pickedImage && pickedPreset === p.key;
+                  return (
+                    <TouchableOpacity
+                      key={p.key}
+                      style={[styles.presetCell, on && styles.presetCellOn]}
+                      onPress={() => togglePreset(p.key)}
+                      activeOpacity={0.75}
+                    >
+                      <Image source={p.source} style={styles.presetImg} resizeMode="contain" />
+                      {on ? (
+                        <View style={styles.presetCheck}>
+                          <Text style={styles.presetCheckText}>✓</Text>
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
               <View style={styles.pickRow}>
                 <TouchableOpacity style={styles.pickBtn} onPress={() => pickAvatar('camera')}>
                   <Image source={ICON_CAM} style={styles.btnIcon} />
@@ -173,7 +218,13 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
                   <Text style={styles.pickBtnAltText}>相册</Text>
                 </TouchableOpacity>
               </View>
-              {pickedImage ? <Text style={styles.pickedTip}>已选新头像，保存后生效</Text> : null}
+              {pickedImage ? (
+                <Text style={styles.pickedTip}>已用自己的照片，保存后生效</Text>
+              ) : pickedPreset ? (
+                <Text style={styles.pickedTip}>
+                  已换成「{AVATAR_PRESETS.find((x) => x.key === pickedPreset)?.label}」造型，保存后生效
+                </Text>
+              ) : null}
             </View>
 
             <Text style={styles.label}>昵称</Text>
@@ -418,6 +469,24 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 6 },
   modalHint: { fontSize: 12, color: C.sub },
   modalAvatar: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#E3EDD8' },
+  // 预置形象：六款吉祥物圆缩略图，选中的换成绿描边 + 右下角小勾
+  avatarBlock: { alignItems: 'center', marginVertical: 14 },
+  presetTitle: { fontSize: 12, color: C.sub, marginTop: 14, marginBottom: 9 },
+  presetRow: { gap: 10, paddingVertical: 2, flexGrow: 1, justifyContent: 'center' },
+  presetCell: {
+    width: 46, height: 46, borderRadius: 23, backgroundColor: '#F1F6EA',
+    borderWidth: 1.5, borderColor: C.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  presetCellOn: { borderWidth: 2.5, borderColor: C.green, backgroundColor: '#fff' },
+  presetImg: { width: 40, height: 40 },
+  presetCheck: {
+    position: 'absolute', right: -3, bottom: -3,
+    width: 16, height: 16, borderRadius: 8, backgroundColor: C.green,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: '#fff',
+  },
+  presetCheckText: { color: '#fff', fontSize: 9, fontWeight: '900', lineHeight: 12 },
   pickRow: { flexDirection: 'row', gap: 12, marginTop: 14 },
   pickBtn: {
     flexDirection: 'row', alignItems: 'center',
