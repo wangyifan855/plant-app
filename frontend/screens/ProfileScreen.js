@@ -4,7 +4,7 @@ import {
   Image, Modal, TextInput, ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { getProfile, updateProfile, listDrafts } from '../lib/api';
+import { getProfile, updateProfile, listDrafts, changePassword } from '../lib/api';
 import { compressImage } from '../lib/compress';
 import { API_URL } from '../lib/config';
 import { fmtDateTime } from '../lib/time';
@@ -37,6 +37,13 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
   const [pickedPreset, setPickedPreset] = useState(null); // 选中的预置造型 key
   const [saving, setSaving] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false); // 退出登录二次确认
+  const [pwdOpen, setPwdOpen] = useState(false);   // 修改密码弹层
+  const [oldPwd, setOldPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [newPwd2, setNewPwd2] = useState('');
+  const [pwdBusy, setPwdBusy] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+  const [pwdDone, setPwdDone] = useState(false);   // 改成功了，弹层切成完成态
   const [drafts, setDrafts] = useState([]);        // 草稿箱：被下架、待重发的帖子
   const [draftEditing, setDraftEditing] = useState(null); // 正在编辑的草稿
 
@@ -135,6 +142,32 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
       await load();
     } catch (e) { setError(e.message || '保存失败，请重试'); }
     finally { setSaving(false); }
+  }
+
+  function openPwd() {
+    setOldPwd('');
+    setNewPwd('');
+    setNewPwd2('');
+    setPwdError('');
+    setPwdDone(false);
+    setPwdOpen(true);
+  }
+
+  async function submitPwd() {
+    if (pwdBusy) return;
+    if (!oldPwd || !newPwd) { setPwdError('当前密码和新密码都要填'); return; }
+    if (newPwd.length < 4) { setPwdError('新密码至少 4 位'); return; }
+    if (newPwd !== newPwd2) { setPwdError('两次输入的新密码不一致'); return; }
+    setPwdBusy(true);
+    setPwdError('');
+    try {
+      await changePassword(oldPwd, newPwd);
+      // 改完当前登录态还留着（后端只换密码不动 session），但把输入清掉
+      setOldPwd(''); setNewPwd(''); setNewPwd2('');
+      setPwdDone(true);
+    } catch (e) {
+      setPwdError(e.message || '修改失败，请重试');
+    } finally { setPwdBusy(false); }
   }
 
   const lists = {
@@ -346,9 +379,22 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
           </View>
         )}
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => setConfirmLogout(true)}>
-          <Text style={styles.logoutText}>退出登录</Text>
-        </TouchableOpacity>
+        {/* 账号操作：改密码 / 退出登录。改密码的后端接口早就有了，之前一直没接界面 */}
+        <View style={styles.accountCard}>
+          <TouchableOpacity style={styles.accountRow} onPress={openPwd} activeOpacity={0.7}>
+            <Text style={styles.accountLabel}>修改密码</Text>
+            <Text style={styles.accountArrow}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.accountLine} />
+          <TouchableOpacity
+            style={styles.accountRow}
+            onPress={() => setConfirmLogout(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.accountLabel, styles.accountLabelMuted]}>退出登录</Text>
+            <Text style={styles.accountArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* 版本号：用来判断当前页是不是最新构建 */}
         <Text style={styles.version}>版本 {BUILD_STAMP}</Text>
@@ -362,6 +408,66 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
         onClose={() => setDraftEditing(null)}
         onDone={async () => { setDraftEditing(null); setSeg('posts'); await load(); }}
       />
+
+      {/* 修改密码：成功后不强制重登（后端只换密码、不动当前 session） */}
+      {pwdOpen ? (
+        <View style={styles.confirmMask}>
+          <View style={styles.pwdCard}>
+            {pwdDone ? (
+              <>
+                <Text style={styles.confirmTitle}>密码已更新</Text>
+                <Text style={styles.confirmBody}>
+                  下次登录请用新密码。当前登录状态不受影响，可以继续用。
+                </Text>
+                <TouchableOpacity style={styles.pwdOkBtn} onPress={() => setPwdOpen(false)}>
+                  <Text style={styles.pwdOkText}>知道了</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.confirmTitle}>修改密码</Text>
+                <Text style={styles.confirmBody}>为了安全，需要先输入当前密码</Text>
+                <TextInput
+                  style={styles.pwdInput}
+                  placeholder="当前密码"
+                  secureTextEntry
+                  value={oldPwd}
+                  onChangeText={setOldPwd}
+                />
+                <TextInput
+                  style={styles.pwdInput}
+                  placeholder="新密码（至少 4 位）"
+                  secureTextEntry
+                  value={newPwd}
+                  onChangeText={setNewPwd}
+                />
+                <TextInput
+                  style={styles.pwdInput}
+                  placeholder="再输一次新密码"
+                  secureTextEntry
+                  value={newPwd2}
+                  onChangeText={setNewPwd2}
+                />
+                {pwdError ? <Text style={styles.pwdError}>{pwdError}</Text> : null}
+                <View style={styles.confirmRow}>
+                  <TouchableOpacity style={styles.confirmCancel} onPress={() => setPwdOpen(false)}>
+                    <Text style={styles.confirmCancelText}>取消</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.pwdSubmit, pwdBusy && styles.disabled]}
+                    onPress={submitPwd}
+                    disabled={pwdBusy}
+                  >
+                    {pwdBusy
+                      ? <ActivityIndicator color="#fff" />
+                      : <Text style={styles.pwdSubmitText}>确认修改</Text>}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      ) : null}
 
       {/* 退出登录二次确认（网页端 Alert 多按钮不可用，用自定义弹层） */}
       {confirmLogout ? (
@@ -555,11 +661,16 @@ const styles = StyleSheet.create({
   tileFoot: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   tileAuthor: { flex: 1, fontSize: 11, color: C.sub },
   tileLike: { fontSize: 11, color: C.sub },
-  logoutBtn: {
-    marginTop: 18, borderWidth: 1, borderColor: C.border, borderRadius: 12,
-    paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff',
+  // 账号操作区（改密码 / 退出登录）
+  accountCard: {
+    marginTop: 18, backgroundColor: '#fff', borderRadius: 12,
+    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
   },
-  logoutText: { color: C.sub, fontSize: 14 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+  accountLabel: { flex: 1, fontSize: 14, color: C.text, fontWeight: '600' },
+  accountLabelMuted: { color: C.sub, fontWeight: '400' },
+  accountArrow: { fontSize: 16, color: C.gray },
+  accountLine: { height: 1, backgroundColor: '#F0F4EA', marginLeft: 16 },
   version: { textAlign: 'center', color: C.gray, fontSize: 11, marginTop: 18, marginBottom: 8 },
   // 退出登录二次确认（absolute 覆盖整页，避开网页端 Modal 叠层问题）
   confirmMask: {
@@ -575,6 +686,23 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#F1F3EE', borderRadius: 12,
     paddingVertical: 12, alignItems: 'center',
   },
+  // 修改密码弹层（比确认框高，输入框竖排）
+  pwdCard: { width: '100%', maxWidth: 360, backgroundColor: '#fff', borderRadius: 18, padding: 20 },
+  pwdInput: {
+    backgroundColor: '#fff', borderWidth: 1, borderColor: C.border, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginTop: 10, color: C.text,
+  },
+  pwdError: { color: '#C2410C', fontSize: 12, marginTop: 10 },
+  pwdSubmit: {
+    flex: 1, backgroundColor: C.greenDark, borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  pwdSubmitText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  pwdOkBtn: {
+    marginTop: 18, backgroundColor: C.greenDark, borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  pwdOkText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   confirmCancelText: { color: C.text, fontSize: 14, fontWeight: '700' },
   confirmDanger: {
     flex: 1, backgroundColor: '#C2410C', borderRadius: 12,

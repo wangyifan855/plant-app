@@ -497,6 +497,17 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
           </TouchableOpacity>
         </View>
 
+        {/* 未登录时首页给一条明确的入口：不然看到的是示例花园，
+            很容易以为已经登录了，也找不到注册在哪 */}
+        {!user ? (
+          <TouchableOpacity style={styles.loginBanner} onPress={() => onGoTab('profile')}>
+            <Text style={styles.loginBannerText}>
+              这是示例花园。登录或注册后，才能记录你自己的植物
+            </Text>
+            <Text style={styles.loginBannerGo}>去登录 ›</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {todoTip ? <Text style={styles.todoTip}>{todoTip}</Text> : null}
         {/* 骨架按真实卡片高度占位，数据回来时页面不会整块往下跳 */}
@@ -677,6 +688,14 @@ const styles = StyleSheet.create({
   mascotSmall: { width: 80, height: 80, marginBottom: 6 },
   error: { color: '#C2410C', fontSize: 13, marginBottom: 8 },
   todoTip: { color: '#B45309', fontSize: 12, marginBottom: 8 },
+  // 未登录提示条（暖黄，和发现页的草稿提示同一套视觉语言）
+  loginBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: '#FFF6D6', borderRadius: 12,
+    paddingVertical: 10, paddingHorizontal: 13, marginBottom: 12,
+  },
+  loginBannerText: { flex: 1, fontSize: 12.5, color: '#8A5A18', lineHeight: 18 },
+  loginBannerGo: { fontSize: 12, color: C.greenDark, fontWeight: '800' },
   weatherCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#E3EDD8',
     borderRadius: 18, padding: 16, marginBottom: 12,

@@ -246,6 +246,14 @@ export async function demoLogin() {
   return r;
 }
 
+// 修改密码：要验证旧密码。改完当前会话仍然有效，不用重新登录。
+export async function changePassword(oldPassword, newPassword) {
+  const form = new FormData();
+  form.append('old_password', oldPassword);
+  form.append('new_password', newPassword);
+  return request('/auth/change-password', { method: 'POST', form });
+}
+
 // 上传/更换花园植物的真实照片（服务端返回 /files/... 相对路径，这里拼成绝对地址）
 export async function uploadPlantPhoto(plantId, image) {
   const form = new FormData();
