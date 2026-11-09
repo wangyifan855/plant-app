@@ -4,7 +4,9 @@
 // 不会每次进来重新洗牌 —— 花园要有「这是我的地」的稳定感。
 // 桌面端悬停看信息、点击进档案；手机没有 hover，点一下先看信息，气泡里再进档案。
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import {
+  View, Text, Pressable, TouchableOpacity, StyleSheet, Platform,
+} from 'react-native';
 import { C } from '../lib/theme';
 import { CROPS, cropEmoji } from '../lib/crops';
 import { plantStatus } from '../lib/plantStatus';
@@ -58,6 +60,30 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
   const cur = laid.find((x) => x.p.id === showId) || null;
   const curStatus = cur ? plantStatus(cur.p) : null;
 
+  // 草叶：确定性散布，两三根凑成一簇才像草（单根散着看就是划痕）。
+  // 不用底图 —— 生成图的纹理缩小到这个尺寸只会糊成污渍。
+  const blades = useMemo(() => {
+    if (!w) return [];
+    const clusters = Math.min(26, Math.max(8, Math.round((w * lawnH) / 5600)));
+    const out = [];
+    for (let c = 0; c < clusters; c += 1) {
+      const bx = rand(c * 3.17 + 11) * w;
+      const by = rand(c * 7.31 + 5) * lawnH;
+      const n = 2 + Math.floor(rand(c * 4.71 + 1) * 2); // 每簇 2~3 根
+      for (let k = 0; k < n; k += 1) {
+        const s = c * 13.7 + k * 3.31;
+        out.push({
+          left: bx + (k - (n - 1) / 2) * 4.2 + (rand(s + 2) - 0.5) * 2.5,
+          top: by - rand(s + 4) * 3.5,
+          h: 7 + rand(s + 6) * 7,
+          rot: (k - (n - 1) / 2) * 11 + (rand(s + 8) - 0.5) * 9,
+          op: 0.1 + rand(s + 9) * 0.16,
+        });
+      }
+    }
+    return out;
+  }, [w, lawnH]);
+
   let tipStyle = null;
   if (cur && innerW > 0) {
     const left = Math.max(6, Math.min(cur.cx - TIP_W / 2, w - TIP_W - 6));
@@ -72,8 +98,21 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
       style={[styles.lawn, { height: lawnH }]}
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
     >
-      {/* 草地：底色 + 每行一条浅色苗床，做出「垄」的感觉 */}
+      {/* 草地：底色渐变 + 手绘草叶点缀，每行再铺一条浅色苗床做出「垄」 */}
       <View style={[StyleSheet.absoluteFill, styles.turf]} pointerEvents="none" />
+      {blades.map((b, i) => (
+        <View
+          key={`blade-${i}`}
+          pointerEvents="none"
+          style={[styles.blade, {
+            left: b.left,
+            top: b.top,
+            height: b.h,
+            opacity: b.op,
+            transform: [{ rotate: `${b.rot}deg` }],
+          }]}
+        />
+      ))}
       {Array.from({ length: rows }).map((_, r) => (
         <View
           key={`bed-${r}`}
@@ -159,17 +198,21 @@ const styles = StyleSheet.create({
     maxWidth: 880,
     alignSelf: 'center',
     borderRadius: 22,
-    backgroundColor: '#CFE6B2',
     overflow: 'visible',
-    // 草坪比页面背景深一点，草地才有厚度
     borderWidth: 1,
-    borderColor: '#BEDCA0',
+    borderColor: '#C2DFA4',
   },
-  turf: { borderRadius: 22, backgroundColor: '#CFE6B2' },
+  // 草地图自己裁圆角，lawn 不能设 overflow:hidden（会切掉气泡）
+  turf: { borderRadius: 22, overflow: 'hidden', backgroundColor: '#CFE7AF' },
+  // 草叶是深绿细条 + 低透明度，在浅绿底上就是笔触，不会抢植物
+  blade: {
+    position: 'absolute', width: 2, borderRadius: 2,
+    backgroundColor: '#4F8228',
+  },
   // 每一行的浅色苗床（垄）
   bed: {
     position: 'absolute', left: 10, right: 10,
-    borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.26)',
+    borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.17)',
   },
   plant: {
     position: 'absolute',
