@@ -18,6 +18,20 @@ const GRASS = '#BFD264';    // 图底部的草色，植物多了往下接色
 
 const PAD = 14;             // 左右留白
 const TIP_W = 200;          // 气泡宽
+const CHUNK = 7;            // 一块地最多 7 株
+const GROUP_GAP = 26;       // 两块地之间留的空
+const FAB_SPACE = 90;       // 右下角悬浮「+」占的高度，植物别种到那儿去
+
+// 每行几个：金字塔式堆叠，上窄下宽，最后一行收一点
+const LAYOUTS = {
+  1: [1],
+  2: [1, 1],    // 这两株会错开成「一左上、一右下」
+  3: [1, 2],
+  4: [1, 2, 1],
+  5: [2, 3],
+  6: [1, 2, 3],
+  7: [2, 3, 2],
+};
 
 // 确定性伪随机：同一个 id 永远得到同一个值
 function rand(seed) {
@@ -36,48 +50,77 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
 
   const isWeb = Platform.OS === 'web';
 
-  // 背景图按容器宽度等比显示；株距按固定值排，一行能放几株算几株，
-  // 整块地居中、行内左对齐，看起来才像一畦菜而不是仪表盘。
+  // 背景图按容器宽度等比显示
   const imgH = w * BG_AR;
   const sky = imgH * SKY_RATIO;
   const spacing = isDesktop ? 140 : 100;
   const plantH = isDesktop ? 120 : 96;
   const rowH = plantH + 26;
 
-  const innerW = Math.max(0, w - PAD * 2);
-  const perRow = Math.max(1, Math.floor(innerW / spacing) || 1);
-  const rows = Math.max(1, Math.ceil(plants.length / perRow));
-  const blockW = Math.min(plants.length || 1, perRow) * spacing;
-  const originX = PAD + Math.max(0, (innerW - blockW) / 2);
+  // 植物按「金字塔」摆：行数由上到下逐行加宽，每行水平居中。
+  // 1 居中 / 2 错开 / 3 = 1+2 / 4 = 1+2+1 / 5 = 2+3 / 6 = 1+2+3 / 7 = 2+3+2。
+  // 超过 7 株就再起一块地，用同一套规则，不破坏节奏。
+  const { laid, lawnH } = useMemo(() => {
+    if (!w) return { laid: [], lawnH: imgH || 1 };
 
-  // 舞台至少一屏草坡那么高；植物多了往下长，底部用草色接上
-  const lawnH = Math.max(imgH, sky + rows * rowH + PAD * 2);
+    const chunks = [];
+    for (let i = 0; i < plants.length; i += CHUNK) chunks.push(plants.slice(i, i + CHUNK));
+    const rowCounts = chunks.map((c) => LAYOUTS[c.length] || [3, 3, 1]);
 
-  const laid = useMemo(() => plants.map((p, i) => {
-    const col = i % perRow;
-    const row = Math.floor(i / perRow);
-    const seed = (typeof p.id === 'number' ? p.id : i + 1) + 1;
-    // 不在 14 种里的（比如 demo 的「窗台薄荷」）用通用幼苗顶上，别让花园里冒出个 emoji
-    const plant = cropPlant(p.crop) || UNKNOWN_PLANT;
-    const ratio = plant.ratio;
+    // 先算总高，好在草地里垂直居中（只放得下一行时别贴着草坡边缘）
+    const blockH = rowCounts.reduce((s, r) => s + r.length * rowH, 0)
+      + Math.max(0, chunks.length - 1) * GROUP_GAP;
+    // 底部要给悬浮「+」按钮让地方，不然最下面一排会被它压住
+    const usableH = imgH - sky - FAB_SPACE;
+    const startY = blockH <= usableH - PAD * 2
+      ? sky + (usableH - blockH) / 2
+      : sky;
 
-    // 先按统一高度算宽，太宽的（草莓那种趴地植物）改用宽度约束、自然变矮
-    let ph = plantH;
-    let pw = ph * ratio;
-    const maxW = spacing * 0.94;
-    if (pw > maxW) { pw = maxW; ph = pw / ratio; }
+    const centerX = w / 2;
+    const out = [];
+    let baseTop = startY;
 
-    return {
-      p,
-      plant,
-      row,
-      w: pw,
-      h: ph,
-      cx: originX + spacing * (col + 0.5) + (rand(seed) - 0.5) * (spacing * 0.16),
-      // 底部基线对齐：不同高度的植物扎根在同一条线上
-      baseY: sky + row * rowH + rowH * 0.92,
-    };
-  }), [plants, perRow, originX, spacing, sky, plantH, rowH]);
+    chunks.forEach((chunk, gi) => {
+      const counts = rowCounts[gi];
+      let k = 0;
+      counts.forEach((count, row) => {
+        const rowSpan = (count - 1) * spacing;
+        for (let c = 0; c < count; c += 1) {
+          const p = chunk[k];
+          const seed = (typeof p.id === 'number' ? p.id : gi * CHUNK + k + 1) + 1;
+          // 不在 14 种里的用通用幼苗顶上，别让花园里冒出个 emoji
+          const plant = cropPlant(p.crop) || UNKNOWN_PLANT;
+          const ratio = plant.ratio;
+
+          // 先按统一高度算宽，太宽的（草莓那种趴地植物）改用宽度约束、自然变矮
+          let ph = plantH;
+          let pw = ph * ratio;
+          const maxW = spacing * 0.94;
+          if (pw > maxW) { pw = maxW; ph = pw / ratio; }
+
+          // 只有两株时上下错开，做成「一左上、一右下」，不然会竖着叠成一条线
+          const x = chunk.length === 2
+            ? centerX + (row === 0 ? -0.45 : 0.45) * spacing
+            : centerX - rowSpan / 2 + c * spacing;
+
+          out.push({
+            p,
+            plant,
+            row,
+            w: pw,
+            h: ph,
+            cx: x + (rand(seed) - 0.5) * (spacing * 0.12),
+            // 底部基线对齐：不同高度的植物扎根在同一条线上
+            baseY: baseTop + row * rowH + rowH * 0.92,
+          });
+          k += 1;
+        }
+      });
+      baseTop += counts.length * rowH + GROUP_GAP;
+    });
+
+    return { laid: out, lawnH: Math.max(imgH, startY + blockH + PAD * 2) };
+  }, [plants, w, imgH, sky, spacing, plantH, rowH]);
 
   const showId = activeId != null ? activeId : hoverId;
   const cur = laid.find((x) => x.p.id === showId) || null;
