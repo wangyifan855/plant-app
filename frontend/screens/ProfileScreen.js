@@ -358,9 +358,8 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
 
             {/* 改密码收进这里，个人主页外面不再单开一块 */}
             <View style={styles.pwdDivider} />
-            <TouchableOpacity style={styles.pwdEntry} onPress={openPwdPanel} activeOpacity={0.7}>
-              <Text style={styles.pwdEntryText}>修改密码</Text>
-              <Text style={styles.pwdEntryArrow}>›</Text>
+            <TouchableOpacity style={styles.pwdBtn} onPress={openPwdPanel} activeOpacity={0.8}>
+              <Text style={styles.pwdBtnText}>修改密码</Text>
             </TouchableOpacity>
               </>
             )}
@@ -701,10 +700,14 @@ const styles = StyleSheet.create({
     paddingVertical: 13, alignItems: 'center',
   },
   pwdOkText: { color: '#fff', fontSize: 15, fontWeight: '800' },
-  pwdDivider: { height: 1, backgroundColor: '#EDF3E5', marginTop: 22, marginBottom: 4 },
-  pwdEntry: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
-  pwdEntryText: { flex: 1, fontSize: 14, color: C.text, fontWeight: '600' },
-  pwdEntryArrow: { fontSize: 16, color: C.gray },
+  pwdDivider: { height: 1, backgroundColor: '#EDF3E5', marginTop: 18, marginBottom: 16 },
+  // 改密码是个次要操作，用居中的浅色胶囊按钮，别跟「保存」抢注意力
+  pwdBtn: {
+    alignSelf: 'center',
+    borderWidth: 1, borderColor: '#D3E6C0', borderRadius: 999,
+    paddingVertical: 11, paddingHorizontal: 38, backgroundColor: '#fff',
+  },
+  pwdBtnText: { color: C.greenDark, fontSize: 13.5, fontWeight: '700' },
   confirmCancelText: { color: C.text, fontSize: 14, fontWeight: '700' },
   confirmDanger: {
     flex: 1, backgroundColor: '#C2410C', borderRadius: 12,
