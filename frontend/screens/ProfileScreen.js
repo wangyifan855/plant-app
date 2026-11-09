@@ -623,6 +623,8 @@ const styles = StyleSheet.create({
   saveBtn: {
     marginTop: 22, backgroundColor: '#2F5413', borderRadius: 12,
     paddingVertical: 13, alignItems: 'center',
+    // 透明边框占位：让「保存」和下面的「修改密码」（带 1.5 实边）盒模型一致、高度分毫不差
+    borderWidth: 1.5, borderColor: 'transparent',
   },
   modalError: { color: C.red, fontSize: 13, marginTop: 16, textAlign: 'center' },
   disabled: { opacity: 0.6 },
@@ -701,13 +703,13 @@ const styles = StyleSheet.create({
   },
   pwdOkText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   pwdDivider: { height: 1, backgroundColor: '#EDF3E5', marginTop: 18, marginBottom: 16 },
-  // 改密码是个次要操作，用居中的浅色胶囊按钮，别跟「保存」抢注意力
+  // 和「保存」同宽同高，只是描边白底——两个按钮一大一小看着像排版事故。
+  // 描边比全局 C.border 深一档：米绿底上太淡就只剩文字，看不出是个按钮。
   pwdBtn: {
-    alignSelf: 'center',
-    borderWidth: 1, borderColor: '#D3E6C0', borderRadius: 999,
-    paddingVertical: 11, paddingHorizontal: 38, backgroundColor: '#fff',
+    borderWidth: 1.5, borderColor: '#C6DCAF', borderRadius: 12,
+    paddingVertical: 13, alignItems: 'center', backgroundColor: '#fff',
   },
-  pwdBtnText: { color: C.greenDark, fontSize: 13.5, fontWeight: '700' },
+  pwdBtnText: { color: C.greenDark, fontSize: 15, fontWeight: '800' },
   confirmCancelText: { color: C.text, fontSize: 14, fontWeight: '700' },
   confirmDanger: {
     flex: 1, backgroundColor: '#C2410C', borderRadius: 12,
