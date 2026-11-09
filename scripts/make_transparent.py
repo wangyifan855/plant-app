@@ -97,5 +97,7 @@ for i, name in enumerate(["mascot_identify.png", "mascot_graft.png", "mascot_com
     p = os.path.join(OUT, name)
     if os.path.exists(p):
         prev.paste(Image.open(p).convert('RGBA'), ((i % 3) * 512, (i // 3) * 512), Image.open(p).convert('RGBA'))
-prev.save('preview_mascot_transparent.png')
+PREVIEW_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'preview')
+os.makedirs(PREVIEW_DIR, exist_ok=True)
+prev.save(os.path.join(PREVIEW_DIR, 'preview_mascot_transparent.png'))
 print('preview ok')

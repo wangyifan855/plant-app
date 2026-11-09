@@ -129,6 +129,8 @@ npx expo start        # 真机用 Expo Go 扫码；浏览器预览用网页模�
 ├── prototype/              # 原型设计 + 吉祥物源文件 + live_test 网页测试台
 ├── test_samples/           # 自测用示例植物照片
 ├── docs/screenshots/       # README 界面截图（5 张）
+├── docs/preview/           # 开发期间的 UI 调试截图（preview_*.png，不入库）
+├── logs/                   # 本地开发服务日志（*.log，不入库）
 ├── deploy/                 # HF Spaces 部署说明
 ├── render.yaml             # Render Blueprint（连 GitHub 自动建服务）
 └── 需求分析文档_v2.1_安卓版.md
