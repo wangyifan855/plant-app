@@ -246,11 +246,12 @@ const styles = StyleSheet.create({
   hi: { fontSize: 28, fontWeight: '800', color: '#1F3D10' },
   user: { fontSize: 13, color: C.sub, marginTop: 2 },
   headerMascot: { width: 68, height: 68, marginLeft: 8 },
-  list: { padding: 16, paddingBottom: 90 },
+  // 草坪要铺满整屏宽，所以列表容器不再留左右内边距
+  list: { paddingTop: 2, paddingBottom: 90 },
   empty: { alignItems: 'center', marginTop: 60 },
   emptyEmoji: { fontSize: 56 },
   emptyText: { color: C.sub, marginTop: 12, textAlign: 'center', paddingHorizontal: 30 },
-  lawnTip: { fontSize: 11.5, color: C.sub, textAlign: 'center', marginTop: 14 },
+  lawnTip: { fontSize: 11.5, color: C.sub, textAlign: 'center', marginTop: 14, paddingHorizontal: 16 },
   modalHint: { fontSize: 12, color: C.sub, marginBottom: 6 },
   error: { color: C.red, fontSize: 13, paddingHorizontal: 16 },
   fab: {

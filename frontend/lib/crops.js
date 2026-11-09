@@ -30,3 +30,27 @@ export const CROP_EMOJI = {
 export function cropEmoji(en) {
   return CROP_EMOJI[en] || '🌱';
 }
+
+// 草坪上「种下去」用的植物插画（scripts/cut_plants.py 抠好的透明图）。
+// ratio = 宽/高，渲染时按高度算宽度，省得每张图都去量。
+export const CROP_PLANT = {
+  Tomato: { img: require('../assets/plants/tomato.png'), ratio: 0.847 },
+  Apple: { img: require('../assets/plants/apple.png'), ratio: 0.956 },
+  Potato: { img: require('../assets/plants/potato.png'), ratio: 1.028 },
+  Grape: { img: require('../assets/plants/grape.png'), ratio: 0.55 },
+  Corn: { img: require('../assets/plants/corn.png'), ratio: 0.497 },
+  Pepper: { img: require('../assets/plants/pepper.png'), ratio: 0.872 },
+  Strawberry: { img: require('../assets/plants/strawberry.png'), ratio: 1.423 },
+  Blueberry: { img: require('../assets/plants/blueberry.png'), ratio: 0.938 },
+  Cherry: { img: require('../assets/plants/cherry.png'), ratio: 0.959 },
+  Peach: { img: require('../assets/plants/peach.png'), ratio: 0.956 },
+  Orange: { img: require('../assets/plants/orange.png'), ratio: 0.956 },
+  Raspberry: { img: require('../assets/plants/raspberry.png'), ratio: 0.894 },
+  Soybean: { img: require('../assets/plants/soybean.png'), ratio: 0.8 },
+  Squash: { img: require('../assets/plants/squash.png'), ratio: 0.766 },
+};
+
+// 拿不到插画（比如用户填了不在 14 种里的作物）时返回 null，调用方回退到 emoji
+export function cropPlant(en) {
+  return CROP_PLANT[en] || null;
+}
