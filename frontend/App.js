@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Image } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Image, Animated, Platform,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import HomeScreen from './screens/HomeScreen';
 import IdentifyScreen from './screens/IdentifyScreen';
@@ -28,6 +30,104 @@ const TABS = [
   { key: 'profile', title: '个人资料', icon: '👤' },
 ];
 
+// RN-web 不支持 native driver，web 上必须走 JS 驱动，否则控制台一片告警
+const NATIVE = Platform.OS !== 'web';
+
+// 选中态弹一下：active 由 false 变 true 的那一刻从 0.86 弹回 1。
+// 只在"切过去"时弹，重渲染或本来就选中的不会反复抖。
+function useBounce(active) {
+  const s = useRef(new Animated.Value(1)).current;
+  const prev = useRef(active);
+  useEffect(() => {
+    if (active && !prev.current) {
+      s.setValue(0.86);
+      Animated.spring(s, {
+        toValue: 1, friction: 4.5, tension: 150, useNativeDriver: NATIVE,
+      }).start();
+    }
+    prev.current = active;
+  }, [active, s]);
+  return s;
+}
+
+// 底部 tab 单项（图标选中时弹一下）
+function TabItem({ t, on, onPress }) {
+  const s = useBounce(on);
+  return (
+    <TouchableOpacity style={styles.tabItem} onPress={onPress} activeOpacity={0.7}>
+      <Animated.Text
+        style={[styles.tabIcon, on && styles.tabIconOn, { transform: [{ scale: s }] }]}
+      >
+        {t.icon}
+      </Animated.Text>
+      <Text style={[styles.tabText, on && styles.tabActive]}>{t.title}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// 底部 tab bar + 滑动指示条。
+// 指示条宽度靠 onLayout 量出来（横向等分），没量到之前不渲染，避免先闪一下再跳位。
+function TabBar({ tab, onSelect }) {
+  const idx = Math.max(0, TABS.findIndex((t) => t.key === tab));
+  const pos = useRef(new Animated.Value(idx)).current;
+  const [w, setW] = useState(0);
+  const itemW = w / TABS.length;
+
+  useEffect(() => {
+    Animated.spring(pos, {
+      toValue: idx, friction: 9, tension: 90, useNativeDriver: NATIVE,
+    }).start();
+  }, [idx, pos]);
+
+  const left = useMemo(
+    () => (itemW
+      ? pos.interpolate({
+        inputRange: [0, TABS.length - 1],
+        outputRange: [0, itemW * (TABS.length - 1)],
+      })
+      : 0),
+    [pos, itemW]
+  );
+
+  return (
+    <View style={styles.tabBar} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+      {itemW > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.tabIndWrap, { width: itemW, transform: [{ translateX: left }] }]}
+        >
+          <View style={styles.tabInd} />
+        </Animated.View>
+      ) : null}
+      <View style={styles.tabRow}>
+        {TABS.map((t) => (
+          <TabItem key={t.key} t={t} on={tab === t.key} onPress={() => onSelect(t.key)} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// PC 侧边栏单项：选中时左侧长出一条竖条，图标同样弹一下
+function SideItem({ t, on, onPress }) {
+  const s = useBounce(on);
+  return (
+    <TouchableOpacity
+      style={[styles.navItem, on && styles.navItemOn]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      {on ? <View style={styles.navMark} /> : null}
+      <Animated.Text
+        style={[styles.navIcon, on && styles.navIconOn, { transform: [{ scale: s }] }]}
+      >
+        {t.icon}
+      </Animated.Text>
+      <Text style={[styles.navText, on && styles.navTextOn]}>{t.title}</Text>
+    </TouchableOpacity>
+  );
+}
+
 // PC 端左侧导航（替代底部 tab bar）
 function SideNav({ tab, onSelect, user }) {
   return (
@@ -41,19 +141,9 @@ function SideNav({ tab, onSelect, user }) {
       </View>
 
       <View style={styles.navList}>
-        {TABS.map((t) => {
-          const on = tab === t.key;
-          return (
-            <TouchableOpacity
-              key={t.key}
-              style={[styles.navItem, on && styles.navItemOn]}
-              onPress={() => onSelect(t.key)}
-            >
-              <Text style={[styles.navIcon, on && styles.navIconOn]}>{t.icon}</Text>
-              <Text style={[styles.navText, on && styles.navTextOn]}>{t.title}</Text>
-            </TouchableOpacity>
-          );
-        })}
+        {TABS.map((t) => (
+          <SideItem key={t.key} t={t} on={tab === t.key} onPress={() => onSelect(t.key)} />
+        ))}
       </View>
 
       <View style={styles.sideFoot}>
@@ -240,20 +330,7 @@ export default function App() {
           )}
         </View>
 
-        {!isDesktop && (
-          <View style={styles.tabBar}>
-            {TABS.map((t) => (
-              <TouchableOpacity
-                key={t.key}
-                style={styles.tabItem}
-                onPress={() => switchTab(t.key)}
-              >
-                <Text style={[styles.tabIcon, tab === t.key && styles.tabIconOn]}>{t.icon}</Text>
-                <Text style={[styles.tabText, tab === t.key && styles.tabActive]}>{t.title}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+        {!isDesktop && <TabBar tab={tab} onSelect={switchTab} />}
       </View>
 
       {/* 嫁接初筛（原「嫁接」tab，弹层保留） */}
@@ -320,17 +397,29 @@ const styles = StyleSheet.create({
   navIconOn: { opacity: 1 },
   navText: { fontSize: 14, color: C.sub, fontWeight: '600' },
   navTextOn: { color: C.greenDark, fontWeight: '800' },
+  // PC 导航选中项左侧那条竖线
+  navMark: {
+    position: 'absolute', left: 0, top: 10, bottom: 10, width: 3,
+    borderRadius: 2, backgroundColor: C.green,
+  },
   sideFoot: { paddingVertical: 16, borderTopWidth: 1, borderTopColor: '#F0F0EA' },
   sideFootText: { fontSize: 11, color: C.sub, lineHeight: 16 },
 
+  // 底部 tab（自带一条会滑的指示条）
   tabBar: {
-    flexDirection: 'row', borderTopWidth: 1, borderTopColor: C.border,
-    backgroundColor: '#fff', paddingBottom: 6,
+    position: 'relative', backgroundColor: '#fff',
+    borderTopWidth: 1, borderTopColor: C.border, paddingBottom: 6,
   },
-  tabItem: { flex: 1, paddingVertical: 8, alignItems: 'center' },
+  tabRow: { flexDirection: 'row' },
+  tabIndWrap: {
+    position: 'absolute', top: -1, left: 0, height: 3,
+    alignItems: 'center', zIndex: 2,
+  },
+  tabInd: { width: '34%', height: 3, borderRadius: 2, backgroundColor: C.green },
+  tabItem: { flex: 1, paddingTop: 10, paddingBottom: 8, alignItems: 'center' },
   tabIcon: { fontSize: 20, opacity: 0.45 },
   tabIconOn: { opacity: 1 },
-  tabText: { fontSize: 12, color: C.sub, marginTop: 2 },
+  tabText: { fontSize: 12, color: C.sub, marginTop: 3 },
   tabActive: { color: C.greenDark, fontWeight: '800' },
 
   modalWrap: { flex: 1, backgroundColor: C.bg },

@@ -8,6 +8,9 @@ import { listGarden, addPlant, createPlantTrack, uploadPlantPhoto } from '../lib
 import PageBackground from '../components/PageBackground';
 import PlantDetailScreen from './PlantDetailScreen';
 import SmartImage from '../components/SmartImage';
+import FadeUp from '../components/FadeUp';
+import TapCard from '../components/TapCard';
+import { SkeletonRows } from '../components/Skeleton';
 import { CROPS } from '../lib/crops';
 import { API_URL } from '../lib/config';
 import { C } from '../lib/theme';
@@ -145,7 +148,7 @@ export default function GardenScreen({ user, onOpenTrack, onGoIdentify, openPlan
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <ScrollView contentContainerStyle={styles.list}>
-        {loading ? <Text style={styles.tip}>加载中…</Text> : null}
+        {loading ? <SkeletonRows rows={4} /> : null}
         {!loading && plants.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🪴</Text>
@@ -153,10 +156,11 @@ export default function GardenScreen({ user, onOpenTrack, onGoIdentify, openPlan
           </View>
         ) : null}
 
-        {plants.map((p) => {
+        {plants.map((p, i) => {
           const st = statusOf(p);
           return (
-            <TouchableOpacity key={p.id} style={styles.card} onPress={() => setDetailId(p.id)} activeOpacity={0.8}>
+            <FadeUp key={p.id} index={i} style={{ marginBottom: 12 }}>
+            <TapCard style={styles.card} onPress={() => setDetailId(p.id)}>
               <SmartImage
                 uri={p.photo_url ? (p.photo_url.startsWith('http') ? p.photo_url : `${API_URL}${p.photo_url}`) : null}
                 style={styles.cardPhoto}
@@ -180,7 +184,8 @@ export default function GardenScreen({ user, onOpenTrack, onGoIdentify, openPlan
                 ) : null}
               </View>
               <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
+            </TapCard>
+            </FadeUp>
           );
         })}
       </ScrollView>
@@ -278,7 +283,7 @@ const styles = StyleSheet.create({
   emptyText: { color: C.sub, marginTop: 12, textAlign: 'center', paddingHorizontal: 30 },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-    borderRadius: 16, padding: 12, marginBottom: 12,
+    borderRadius: 16, padding: 12,
   },
   cardPhoto: { width: 52, height: 52, borderRadius: 14, marginRight: 12 },
   modalHint: { fontSize: 12, color: C.sub, marginBottom: 6 },

@@ -6,6 +6,9 @@ import {
 import { getHome, getTodos, getNotifications, getUnreadCount, markNotificationsRead, createPlantTrack } from '../lib/api';
 import PageBackground from '../components/PageBackground';
 import LikeBurst from '../components/LikeBurst';
+import FadeUp from '../components/FadeUp';
+import TapCard from '../components/TapCard';
+import Skeleton, { SkeletonRows } from '../components/Skeleton';
 import PlantDetailScreen from './PlantDetailScreen';
 import { API_URL } from '../lib/config';
 import SmartImage from '../components/SmartImage';
@@ -414,23 +417,25 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
   }
 
   // 植物卡：手机上横向滑动，PC 上换成换行网格（横向滚动在 PC 上不好用）
-  function renderPlantCard(p) {
+  function renderPlantCard(p, i) {
     const st = statusOf(p);
     return (
-      <TouchableOpacity key={p.id} style={styles.plantCard} onPress={() => setDetailId(p.id)}>
-        <View style={[styles.plantAvatar, { backgroundColor: avatarBg(p.id) }]}>
-          <SmartImage
-            uri={plantPhotoUri(p)}
-            style={styles.plantAvatarImg}
-            fallback={<Text style={{ fontSize: 40 }}>{p.photo_emoji || '🌱'}</Text>}
-          />
-        </View>
-        <Text style={styles.plantName} numberOfLines={1}>{p.nickname}</Text>
-        <Text style={styles.plantCrop} numberOfLines={1}>{cropZh(p.crop)}</Text>
-        <View style={[styles.badge, { backgroundColor: st.bg }]}>
-          <Text style={[styles.badgeText, { color: st.color }]}>{st.text}</Text>
-        </View>
-      </TouchableOpacity>
+      <FadeUp key={p.id} index={i}>
+        <TapCard style={styles.plantCard} onPress={() => setDetailId(p.id)}>
+          <View style={[styles.plantAvatar, { backgroundColor: avatarBg(p.id) }]}>
+            <SmartImage
+              uri={plantPhotoUri(p)}
+              style={styles.plantAvatarImg}
+              fallback={<Text style={{ fontSize: 40 }}>{p.photo_emoji || '🌱'}</Text>}
+            />
+          </View>
+          <Text style={styles.plantName} numberOfLines={1}>{p.nickname}</Text>
+          <Text style={styles.plantCrop} numberOfLines={1}>{cropZh(p.crop)}</Text>
+          <View style={[styles.badge, { backgroundColor: st.bg }]}>
+            <Text style={[styles.badgeText, { color: st.color }]}>{st.text}</Text>
+          </View>
+        </TapCard>
+      </FadeUp>
     );
   }
 
@@ -441,14 +446,16 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>快捷功能</Text>
         </View>
-        <TouchableOpacity style={styles.graftCard} onPress={onOpenAnalyze}>
-          <Image source={MASCOT_GRAFT} style={styles.graftMascot} resizeMode="contain" />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.graftTitle}>嫁接初筛</Text>
-            <Text style={styles.graftSub}>接穗 + 砧木双图，评估亲和性与成活决策</Text>
-          </View>
-          <Text style={{ color: C.sub }}>›</Text>
-        </TouchableOpacity>
+        <FadeUp index={3}>
+          <TapCard style={styles.graftCard} onPress={onOpenAnalyze}>
+            <Image source={MASCOT_GRAFT} style={styles.graftMascot} resizeMode="contain" />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.graftTitle}>嫁接初筛</Text>
+              <Text style={styles.graftSub}>接穗 + 砧木双图，评估亲和性与成活决策</Text>
+            </View>
+            <Text style={{ color: C.sub }}>›</Text>
+          </TapCard>
+        </FadeUp>
       </View>
     );
   }
@@ -491,7 +498,18 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {todoTip ? <Text style={styles.todoTip}>{todoTip}</Text> : null}
-        {!data && !error ? <ActivityIndicator style={{ marginTop: 40 }} color={C.green} /> : null}
+        {/* 骨架按真实卡片高度占位，数据回来时页面不会整块往下跳 */}
+        {!data && !error ? (
+          <View>
+            <Skeleton height={78} radius={18} style={{ marginBottom: 12 }} />
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 18 }}>
+              <View style={{ flex: 1 }}><Skeleton height={104} radius={18} /></View>
+              <View style={{ flex: 1 }}><Skeleton height={104} radius={18} /></View>
+            </View>
+            <Skeleton width="38%" height={17} radius={6} style={{ marginBottom: 12 }} />
+            <SkeletonRows rows={2} />
+          </View>
+        ) : null}
 
         {data ? (
           // PC 上分两栏（左：天气 + 健康度/待办；右：我的植物 + 快捷功能），手机上仍是单列
@@ -504,44 +522,50 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
               </View>
             ) : null}
             {/* 天气卡 */}
-            <View style={styles.weatherCard}>
-              <Text style={styles.weatherEmoji}>{weather?.emoji || '⛅'}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.weatherMain}>
-                  {weather?.condition} {weather?.temperature}°C
-                  {weather?.demo ? (
-                    <Text style={styles.demoTag}> · 示例</Text>
-                  ) : weather?.city ? (
-                    <Text style={styles.demoTag}> · {weather.city}</Text>
-                  ) : null}
-                </Text>
-                <Text style={styles.weatherHint}>{weather?.hint}</Text>
+            <FadeUp index={0}>
+              <View style={styles.weatherCard}>
+                <Text style={styles.weatherEmoji}>{weather?.emoji || '⛅'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.weatherMain}>
+                    {weather?.condition} {weather?.temperature}°C
+                    {weather?.demo ? (
+                      <Text style={styles.demoTag}> · 示例</Text>
+                    ) : weather?.city ? (
+                      <Text style={styles.demoTag}> · {weather.city}</Text>
+                    ) : null}
+                  </Text>
+                  <Text style={styles.weatherHint}>{weather?.hint}</Text>
+                </View>
               </View>
-            </View>
+            </FadeUp>
 
             {/* 健康度 + 待办 */}
             <View style={styles.statRow}>
-              <TouchableOpacity style={styles.statCard} onPress={() => onGoTab('garden')}>
-                <Text style={styles.statLabel}>花园健康度 ›</Text>
-                <Text style={styles.statValue}>
-                  {garden?.health_score != null ? garden.health_score : '—'}
-                </Text>
-                <Text style={styles.statSub}>
-                  {user ? `${garden?.plant_count ?? 0} 株植物` : '登录后开通'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.statCard} onPress={() => setTodoOpen(true)}>
-                <View style={styles.statHead}>
-                  <Text style={styles.statLabel}>待办</Text>
-                  <View style={styles.checkDot}>
-                    <Text style={{ fontSize: 11, color: '#fff' }}>{todos.length ? todos.length : '✓'}</Text>
+              <FadeUp index={1} style={{ flex: 1 }}>
+                <TapCard style={styles.statCard} containerStyle={{ flex: 1 }} onPress={() => onGoTab('garden')}>
+                  <Text style={styles.statLabel}>花园健康度 ›</Text>
+                  <Text style={styles.statValue}>
+                    {garden?.health_score != null ? garden.health_score : '—'}
+                  </Text>
+                  <Text style={styles.statSub}>
+                    {user ? `${garden?.plant_count ?? 0} 株植物` : '登录后开通'}
+                  </Text>
+                </TapCard>
+              </FadeUp>
+              <FadeUp index={2} style={{ flex: 1 }}>
+                <TapCard style={styles.statCard} containerStyle={{ flex: 1 }} onPress={() => setTodoOpen(true)}>
+                  <View style={styles.statHead}>
+                    <Text style={styles.statLabel}>待办</Text>
+                    <View style={styles.checkDot}>
+                      <Text style={{ fontSize: 11, color: '#fff' }}>{todos.length ? todos.length : '✓'}</Text>
+                    </View>
                   </View>
-                </View>
-                <Text style={styles.statValueSmall} numberOfLines={1}>
-                  {todos.length ? todos[0].text : '已完成'}
-                </Text>
-                <Text style={styles.statSub}>{todos.length ? `还有 ${todos.length} 项，点开任务清单 ›` : '今天见 🌞'}</Text>
-              </TouchableOpacity>
+                  <Text style={styles.statValueSmall} numberOfLines={1}>
+                    {todos.length ? todos[0].text : '已完成'}
+                  </Text>
+                  <Text style={styles.statSub}>{todos.length ? `还有 ${todos.length} 项，点开任务清单 ›` : '今天见 🌞'}</Text>
+                </TapCard>
+              </FadeUp>
             </View>
             {/* 快捷功能：嫁接初筛入口（原「嫁接」tab）。PC 上放在左栏，免得两栏高低差太多 */}
             {isDesktop ? renderQuickSection() : null}

@@ -11,6 +11,9 @@ import { fmtDateTime } from '../lib/time';
 import SmartImage from '../components/SmartImage';
 import PageBackground from '../components/PageBackground';
 import TypewriterText from '../components/TypewriterText';
+import FadeUp from '../components/FadeUp';
+import TapCard from '../components/TapCard';
+import Skeleton, { usePulse } from '../components/Skeleton';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
 
@@ -113,7 +116,7 @@ export default function CommunityScreen({ focusPostId, onFocusConsumed, onGoProf
       ) : null}
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={C.green} />
+        <PostSkeleton cols={isDesktop ? 4 : 2} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40 }}>
           {posts.length === 0 ? (
@@ -125,7 +128,9 @@ export default function CommunityScreen({ focusPostId, onFocusConsumed, onGoProf
             <View style={[styles.waterfall, isDesktop && styles.waterfallPc]}>
               {cols.map((col, ci) => (
                 <View key={ci} style={styles.waterCol}>
-                  {col.map((p) => <PostCard key={p.id} post={p} onPress={() => setOpenPost(p)} />)}
+                  {col.map((p, i) => (
+                    <PostCard key={p.id} post={p} index={i} onPress={() => setOpenPost(p)} />
+                  ))}
                 </View>
               ))}
             </View>
@@ -158,11 +163,12 @@ export default function CommunityScreen({ focusPostId, onFocusConsumed, onGoProf
   );
 }
 
-function PostCard({ post, onPress }) {
+function PostCard({ post, onPress, index = 0 }) {
   // 统一卡片尺寸：封面固定比例、标题固定两行高、标签行占位——每张卡一样大
   const coverUri = post.images?.[0] ? `${API_URL}${post.images[0]}` : null;
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+    <FadeUp index={index}>
+    <TapCard style={styles.card} containerStyle={styles.cardSlot} onPress={onPress}>
       <SmartImage
         uri={coverUri}
         style={styles.coverImg}
@@ -186,7 +192,37 @@ function PostCard({ post, onPress }) {
         <Text style={styles.author} numberOfLines={1}>{post.nickname}</Text>
         <Text style={styles.stats}>♡ {post.likes} · 💬 {post.comment_count}</Text>
       </View>
-    </TouchableOpacity>
+    </TapCard>
+    </FadeUp>
+  );
+}
+
+// 瀑布流骨架：双列（PC 四列），每格按封面 + 两行标题的形状占位
+function PostSkeleton({ cols = 2, perCol = 3 }) {
+  const pulse = usePulse();
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, padding: 12 }}>
+      {Array.from({ length: cols }).map((_, ci) => (
+        <View key={ci} style={{ flex: 1 }}>
+          {Array.from({ length: perCol }).map((__, i) => (
+            <View
+              key={i}
+              style={{
+                backgroundColor: C.card, borderRadius: 14,
+                overflow: 'hidden', marginBottom: 10,
+              }}
+            >
+              <Skeleton height={150} radius={0} pulse={pulse} />
+              <View style={{ padding: 10 }}>
+                <Skeleton width="88%" height={13} pulse={pulse} />
+                <Skeleton width="58%" height={13} pulse={pulse} style={{ marginTop: 7 }} />
+                <Skeleton width="46%" height={11} pulse={pulse} style={{ marginTop: 12 }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -765,7 +801,9 @@ const styles = StyleSheet.create({
   // PC 上不限宽，四列铺满内容区（此前限 760 会让卡片缩水、右侧留白）
   waterfallPc: { width: '100%' },
   waterCol: { flex: 1 },
-  card: { backgroundColor: C.card, borderRadius: 14, overflow: 'hidden', marginBottom: 10 },
+  card: { backgroundColor: C.card, borderRadius: 14, overflow: 'hidden' },
+  // 间距放在按压缩放层的外面，否则 margin 落不进父级盒模型，卡片会挤在一起
+  cardSlot: { marginBottom: 10 },
   cover: { alignItems: 'center', justifyContent: 'center' },
   coverBig: { height: 200, borderRadius: 14, marginBottom: 12 },
   coverEmoji: { fontSize: 46 },

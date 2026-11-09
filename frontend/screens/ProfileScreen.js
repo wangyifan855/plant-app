@@ -9,6 +9,9 @@ import { compressImage } from '../lib/compress';
 import { API_URL } from '../lib/config';
 import { fmtDateTime } from '../lib/time';
 import SmartImage from '../components/SmartImage';
+import FadeUp from '../components/FadeUp';
+import TapCard from '../components/TapCard';
+import { SkeletonRows } from '../components/Skeleton';
 import LoginScreen from './LoginScreen';
 import PageBackground from '../components/PageBackground';
 import { ComposeModal } from './CommunityScreen';
@@ -214,17 +217,18 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
           // 加载中：不要先闪一句"还没有发过帖子"；加载失败时也别一直转圈
           error
             ? <Text style={styles.empty}>加载失败，切换一下标签页再回来重试</Text>
-            : <ActivityIndicator style={{ marginTop: 30 }} color={C.green} />
+            : <SkeletonRows rows={3} />
         ) : lists[seg].items.length === 0 ? (
           <Text style={styles.empty}>{lists[seg].empty}</Text>
         ) : seg === 'drafts' ? (
           // 草稿箱：被管理员下架的帖子，改好重新发布会回到发现页
-          lists[seg].items.map((item) => {
+          lists[seg].items.map((item, i) => {
             const cover = item.images?.[0]
               ? (item.images[0].startsWith('http') ? item.images[0] : `${API_URL}${item.images[0]}`)
               : null;
             return (
-              <View key={item.id} style={styles.draftCard}>
+              <FadeUp key={item.id} index={i}>
+              <View style={styles.draftCard}>
                 <View style={{ flexDirection: 'row' }}>
                   <SmartImage
                     uri={cover}
@@ -253,23 +257,25 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
                   <Text style={styles.draftEditText}>重新编辑并发布</Text>
                 </TouchableOpacity>
               </View>
+              </FadeUp>
             );
           })
         ) : seg === 'comments' ? (
           // 评论：保持列表样式，点整行跳到原帖
-          lists[seg].items.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.itemCard}
-              activeOpacity={0.8}
-              onPress={() => onOpenPost && onOpenPost(item.post_id)}
-            >
-              <Text style={styles.itemTitle}>{item.post_title}</Text>
-              <Text style={styles.itemBody}>{item.body}</Text>
-              <Text style={styles.itemTime}>
-                {fmtDateTime(item.created_at)} · 查看原帖 ›
-              </Text>
-            </TouchableOpacity>
+          lists[seg].items.map((item, i) => (
+            <FadeUp key={item.id} index={i}>
+              <TouchableOpacity
+                style={styles.itemCard}
+                activeOpacity={0.8}
+                onPress={() => onOpenPost && onOpenPost(item.post_id)}
+              >
+                <Text style={styles.itemTitle}>{item.post_title}</Text>
+                <Text style={styles.itemBody}>{item.body}</Text>
+                <Text style={styles.itemTime}>
+                  {fmtDateTime(item.created_at)} · 查看原帖 ›
+                </Text>
+              </TouchableOpacity>
+            </FadeUp>
           ))
         ) : (
           // 收藏 / 点赞：瀑布流，手机上双列、PC 上三列；点封面或标题都进原帖
@@ -280,8 +286,8 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
               lists[seg].items.forEach((it, i) => cols[i % n].push(it));
               return cols.map((col, ci) => (
                 <View key={ci} style={styles.waterCol}>
-                  {col.map((item) => (
-                    <PostTile key={item.id} post={item} onPress={() => onOpenPost && onOpenPost(item.id)} />
+                  {col.map((item, i) => (
+                    <PostTile key={item.id} post={item} index={i} onPress={() => onOpenPost && onOpenPost(item.id)} />
                   ))}
                 </View>
               ));
@@ -333,12 +339,13 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
 }
 
 // 瀑布流卡片：有图显示封面（按原图比例限幅），无图用 emoji 底色块
-function PostTile({ post, onPress }) {
+function PostTile({ post, onPress, index = 0 }) {
   const [aspect, setAspect] = useState(0);
   const coverUri = post.images?.[0] ? `${API_URL}${post.images[0]}` : null;
   const ratio = aspect ? Math.min(Math.max(aspect, 0.65), 1.5) : 1.2;
   return (
-    <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.8}>
+    <FadeUp index={index}>
+    <TapCard style={styles.tile} onPress={onPress}>
       <SmartImage
         uri={coverUri}
         style={[styles.tileCover, { aspectRatio: ratio }]}
@@ -363,7 +370,8 @@ function PostTile({ post, onPress }) {
           <Text style={styles.tileLike}>♡ {post.likes ?? 0}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </TapCard>
+    </FadeUp>
   );
 }
 
