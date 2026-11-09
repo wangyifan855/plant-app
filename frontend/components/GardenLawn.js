@@ -8,7 +8,7 @@ import {
   View, Text, Image, Pressable, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import { C } from '../lib/theme';
-import { CROPS, cropPlant, UNKNOWN_PLANT } from '../lib/crops';
+import { CROPS, cropPlant, cropLook, UNKNOWN_PLANT } from '../lib/crops';
 import { plantStatus } from '../lib/plantStatus';
 
 const GARDEN_BG = require('../assets/garden_bg.jpg');
@@ -17,7 +17,8 @@ const SKY_RATIO = 0.285;    // 草坡从图高的这个位置开始，植物只�
 const GRASS = '#BFD264';    // 图底部的草色，植物多了往下接色
 
 const PAD = 14;             // 左右留白
-const TIP_W = 200;          // 气泡宽
+const TIP_W = 236;          // 气泡宽：要塞下缩略图 + 一段外观描述
+const TIP_EST_H = 200;      // 气泡大致高度（缩略图 + 两行描述 + 两行档案），用于判方向
 const CHUNK = 7;            // 一块地最多 7 株
 const GROUP_GAP = 26;       // 两块地之间留的空
 const FAB_SPACE = 90;       // 右下角悬浮「+」占的高度，植物别种到那儿去
@@ -142,11 +143,22 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
 
   let tipStyle = null;
   if (cur && w > 0) {
-    const left = Math.max(6, Math.min(cur.cx - TIP_W / 2, w - TIP_W - 6));
-    // 第一行的气泡朝下弹，否则会顶到天空外面
-    tipStyle = cur.row === 0
-      ? { left, top: cur.baseY + 6 }
-      : { left, bottom: lawnH - (cur.baseY - cur.h) + 6 };
+    // 靠边时别贴着草坪边缘，留一圈呼吸；草坪太窄时按可用空间退让
+    const edge = Math.max(6, Math.min(14, (w - TIP_W) / 2));
+    const left = Math.max(edge, Math.min(cur.cx - TIP_W / 2, w - TIP_W - edge));
+    const downTop = cur.baseY + 6;
+    const upTop = cur.baseY - cur.h - 6 - TIP_EST_H;
+    // 第一行的气泡朝下弹（上面是天空，弹上去会顶出画面），其余朝上；
+    // 无论朝哪边，最后都夹回草坪范围内，别让卡片露到外面去。
+    const fitsDown = downTop + TIP_EST_H <= lawnH - 4;
+    const fitsUp = upTop >= 4;
+    const useDown = cur.row === 0 ? fitsDown : !fitsUp;
+    tipStyle = {
+      left,
+      top: useDown
+        ? Math.min(downTop, Math.max(4, lawnH - TIP_EST_H - 4))
+        : Math.max(4, upTop),
+    };
   }
 
   return (
@@ -177,7 +189,9 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
             onHoverIn={isWeb ? () => setHoverId(p.id) : undefined}
             onHoverOut={isWeb ? () => setHoverId((h) => (h === p.id ? null : h)) : undefined}
             onPress={() => {
-              if (isWeb) onOpenPlant(p.id);
+              // 桌面端点植物直接进档案（说明已在 hover 里看过）；
+              // 手机 / 平板没有 hover，先弹气泡看说明，气泡里再进档案。
+              if (isDesktop) onOpenPlant(p.id);
               else setActiveId((a) => (a === p.id ? null : p.id));
             }}
             style={[
@@ -194,18 +208,32 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
         );
       })}
 
-      {/* 悬停 / 点选的信息气泡 */}
+      {/* 悬停 / 点选的信息气泡：缩略图 + 昵称 + 品种 + 一句外观说明 + 档案信息 */}
       {cur ? (
         <View style={[styles.tip, tipStyle]} pointerEvents="box-none">
-          <Text style={styles.tipName} numberOfLines={1}>{cur.p.nickname}</Text>
-          <View style={styles.tipRow}>
-            <Text style={styles.tipCrop}>{cropZh(cur.p.crop)}</Text>
-            <View style={[styles.tipBadge, { backgroundColor: curStatus.bg }]}>
-              <Text style={[styles.tipBadgeText, { color: curStatus.color }]}>
-                {curStatus.text}
-              </Text>
+          <View style={styles.tipHead}>
+            <View style={styles.tipThumb}>
+              <Image source={cur.plant.img} style={styles.tipThumbImg} resizeMode="contain" />
+            </View>
+            <View style={styles.tipHeadText}>
+              <Text style={styles.tipName} numberOfLines={1}>{cur.p.nickname}</Text>
+              <View style={styles.tipRow}>
+                <Text style={styles.tipCrop}>{cropZh(cur.p.crop)}</Text>
+                <View style={[styles.tipBadge, { backgroundColor: curStatus.bg }]}>
+                  <Text style={[styles.tipBadgeText, { color: curStatus.color }]}>
+                    {curStatus.text}
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
+
+          <Text style={styles.tipLook} numberOfLines={3}>
+            {cropLook(cur.p.crop) || '还没选定品种的小苗，先在这片地里长着。'}
+          </Text>
+
+          <View style={styles.tipDivider} />
+
           {cur.p.planted_date ? (
             <Text style={styles.tipLine}>种植于 {cur.p.planted_date}</Text>
           ) : null}
@@ -219,7 +247,7 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
           ) : (
             <Text style={styles.tipLine}>还没有诊断记录</Text>
           )}
-          {isWeb ? (
+          {isDesktop ? (
             <Text style={styles.tipHint}>点击可查看档案 ›</Text>
           ) : (
             <TouchableOpacity style={styles.tipBtn} onPress={() => onOpenPlant(cur.p.id)}>
@@ -271,12 +299,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
+  tipHead: { flexDirection: 'row', alignItems: 'center' },
+  // 缩略图垫一层浅绿，插图本身是透明底的，没底会飘
+  tipThumb: {
+    width: 44, height: 44, borderRadius: 11,
+    backgroundColor: '#EAF3DC', alignItems: 'center', justifyContent: 'center',
+    marginRight: 10,
+  },
+  tipThumbImg: { width: 34, height: 34 },
+  tipHeadText: { flex: 1, minWidth: 0 },
   tipName: { fontSize: 14, fontWeight: '800', color: C.text },
-  tipRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5, gap: 6 },
+  tipRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
   tipCrop: { fontSize: 12, color: C.sub },
   tipBadge: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1.5 },
   tipBadgeText: { fontSize: 10.5, fontWeight: '800' },
-  tipLine: { fontSize: 11.5, color: C.sub, marginTop: 6, lineHeight: 16 },
+  // 外观描述：比档案信息稍深一点，读起来像「介绍」而不是「备注」
+  tipLook: { fontSize: 12, color: '#5B6B4C', marginTop: 9, lineHeight: 18 },
+  tipDivider: { height: 1, backgroundColor: '#EFF3E8', marginTop: 9, marginBottom: 2 },
+  tipLine: { fontSize: 11.5, color: C.sub, marginTop: 5, lineHeight: 16 },
   tipHint: { fontSize: 11, color: C.greenDark, marginTop: 8, fontWeight: '700' },
   tipBtn: {
     marginTop: 10, backgroundColor: C.greenTint, borderRadius: 9,
