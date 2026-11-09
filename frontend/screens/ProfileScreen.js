@@ -329,7 +329,8 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
               </View>
               {pickedImage ? (
                 <Text style={styles.pickedTip}>已用自己的照片，保存后生效</Text>
-              ) : pickedPreset ? (
+              ) : pickedPreset && pickedPreset !== presetKey(u?.avatar_url) ? (
+                // 打开弹层时会把当前造型也标成选中，那种情况不算「已换成」
                 <Text style={styles.pickedTip}>
                   已换成「{AVATAR_PRESETS.find((x) => x.key === pickedPreset)?.label}」造型，保存后生效
                 </Text>

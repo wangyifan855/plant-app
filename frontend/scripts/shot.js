@@ -92,7 +92,11 @@ function getTargets() {
     } else {
       const r = await send('Runtime.evaluate', {
         expression: `(() => {
-          const el = [...document.querySelectorAll('div,span')].filter(e => e.textContent.trim() === ${JSON.stringify(target)}).pop();
+          const T = ${JSON.stringify(target)};
+          const all = [...document.querySelectorAll('div,span')];
+          // 先按全等找；找不到再退化成「叶子节点包含」——按钮常带 emoji（如「📈 查看健康曲线」）
+          let el = all.filter(e => e.textContent.trim() === T).pop();
+          if (!el) el = all.filter(e => e.children.length === 0 && e.textContent.includes(T)).pop();
           if (!el) return null;
           const b = el.getBoundingClientRect();
           return { x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width, h: b.height };
@@ -113,11 +117,13 @@ function getTargets() {
     await new Promise((res) => setTimeout(res, 1200));
   }
 
-  if (process.env.REAL_CLICK) {
-    await realClick(process.env.REAL_CLICK, 'REAL_CLICK');
-  }
-  if (process.env.REAL_CLICK2) {
-    await realClick(process.env.REAL_CLICK2, 'REAL_CLICK2');
+  // 多步点击：REAL_CLICKS='第一步|第二步|第三步'（| 分隔，按顺序点）。
+  // REAL_CLICK / REAL_CLICK2 是老写法，保留兼容。
+  const clickSeq = process.env.REAL_CLICKS
+    ? process.env.REAL_CLICKS.split('|').map((s) => s.trim()).filter(Boolean)
+    : [process.env.REAL_CLICK, process.env.REAL_CLICK2].filter(Boolean);
+  for (let i = 0; i < clickSeq.length; i += 1) {
+    await realClick(clickSeq[i], `CLICK#${i + 1}`);
   }
 
   // REAL_HOVER='x,y' 或 '文本'：把鼠标移到目标上但不点击，用来截 hover 态

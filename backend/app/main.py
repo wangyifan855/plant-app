@@ -28,7 +28,7 @@ from . import care as care_kb
 from . import weather as weather_provider
 from .advice import get_suggestion
 
-app = FastAPI(title="GraftCheck API", version="2.0")
+app = FastAPI(title="Avo Plant Manager API", version="2.0")
 
 # React Native 的 fetch 不像浏览器卡 CORS 预检，加 * 无害
 app.add_middleware(

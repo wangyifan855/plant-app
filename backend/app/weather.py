@@ -101,7 +101,7 @@ def _demo() -> dict:
 
 
 def _get_json(url: str) -> dict:
-    req = Request(url, headers={"User-Agent": "GraftCheck/1.0"})
+    req = Request(url, headers={"User-Agent": "AvoPlantManager/1.0"})
     with urlopen(req, timeout=TIMEOUT) as r:
         return json.loads(r.read().decode("utf-8"))
 

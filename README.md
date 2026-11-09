@@ -1,160 +1,224 @@
 # Avo 植物管家 · AVO PLANT MANAGER
 
-**Avo 植物管家** —— 面向家庭种植爱好者的植物健康诊断与嫁接辅助 App（课程原型，独立完成）。围绕「拍张照片 → 知道植物怎么了 → 能不能嫁接 → 慢慢养回来」提供 **识、诊、接、养、晒** 一站式闭环：拍照识别物种/病害、给出处理建议、判断嫁接兼容性、建立健康追踪档案看恢复趋势，还能在社区发帖交流。纯离线跑视觉模型，**不依赖云端识别、不构成农业建议**。
+家庭种植用的植物健康诊断与嫁接辅助 App。拍一张叶子照片，它会告诉你这是什么植物、有没有病、能不能嫁接，然后把每次检查记进档案，慢慢看它恢复。课程原型，独立完成。
 
-- 中文名 **Avo 植物管家**，英文名 **AVO PLANT MANAGER**（AVO＝牛油果🥑 形象吉祥物，取「守护每一株植物」之意；PLANT MANAGER＝植物管家）
-- 品牌口径：Avo 植物管家 · 独立课程项目
+吉祥物是只叫 Avo 的小鳄鱼，所以中文叫「Avo 植物管家」，英文 AVO PLANT MANAGER。
 
-## 功能特性
+识别全部跑在本机，不调用云端视觉接口。**这是教学原型，不是生产级诊断工具，结果不构成农业建议。**
 
-- **诊断（识 + 诊）**：拍照识别植物物种与病害（覆盖番茄、苹果、葡萄、辣椒、草莓等 14 种常见作物），双模型融合给出最高峰置信度结论与处理建议，可一键记入该株植物的健康档案
-- **嫁接辅助（接）**：手填或按识别作物推断接穗/砧木品种，调用兼容性规则判断「能不能接、怎么接」，物种兜底模型负责兜底识别
-- **健康追踪（养）**：为每株植物建立追踪档案，月历打卡 + 拍照记录 + 置信度趋势曲线（好转 / 恶化 / 持平 / 波动），追踪记录可点开看当时的照片与诊断
-- **我的花园**：植物档案管理，历次诊断记录可回看照片与详情；新增植物自动去重，同一株不重复建档
-- **发现（晒）**：小红书式种植社区——发帖（多图 ≤9 + 标签 ≤6 + 可见范围）、双列瀑布流、点赞、评论、关注、收藏；私密帖仅作者可见，草稿箱收纳被下架的帖子
-- **个人资料**：登录注册、头像昵称、草稿箱、退出登录
-- **管理员后台**（`/admin/`）：内容维护 / 用户治理（增删、设管理员）/ 帖子下架（takedown + 系统通知）与恢复 / 删评论 / 数据看板
+## 能做什么
 
-## 技术栈
+**诊断 · 拍照识病。** 拍照或从相册选一张，模型给出物种和病害结论、置信度、处理建议。一次识别可以一键记进对应植物的健康档案。覆盖番茄、苹果、马铃薯、葡萄、玉米、辣椒、草莓、蓝莓、樱桃、桃、橙子、树莓、大豆、南瓜共 14 种作物。
 
-| 层 | 选型 |
-|--|--|
-| 前端 | Expo React Native（SDK 51）+ React；可打包 Android APK，也可 `expo export` 出 Web 静态页（网页端 `node serve.js` 起在 3000） |
-| 后端 | FastAPI + Uvicorn + SQLite（单文件 `backend/data/app.db`） |
-| 视觉模型 | PlantVillage MobileNetV2（实验室病害 38 类）/ PlantDoc EfficientNetV2（真实病害 28 类）/ PlantNet-300K ResNet18（物种兜底）；权重本地化，运行期离线 CPU 推理 |
-| 部署 | Docker（Render / HuggingFace Spaces），仓库根 `render.yaml` 提供 Blueprint；`backend/Dockerfile` 构建期把三个模型下进镜像 |
+**嫁接 · 先算合不合。** 单独入口，填接穗和砧木品种（也可以让模型按识别出的作物推断），走兼容性规则判断能不能接、怎么接、要注意什么。置信度不够时会要求重拍。
 
-## 数据库（核心业务表）
+**养 · 健康追踪。** 每株植物建一份追踪档案，月历打卡、拍照记录、置信度趋势曲线，自动判定好转 / 恶化 / 持平 / 波动。历史记录能点开看当时的照片和诊断。
 
-| 表 | 说明 |
-|--|--|
-| users | 用户（pbkdf2 加盐口令、角色 role、昵称 nickname、头像 avatar） |
-| sessions | 登录会话（Bearer token，登录态真相源） |
-| garden_plants | 我的花园植物档案（品种 variety / crop / 照片 photo_url / 创建时间） |
-| diagnoses | 诊断记录（物种 / 病害 / 置信度 confidence / 建议 advice / 照片，关联植物） |
-| tracks | 健康追踪档案（每株植物至多一条，含品种与起止时间，去重复用） |
-| track_records | 追踪打卡（日期 / 笔记 note / 照片 image_url / 置信度，趋势曲线数据源） |
-| posts | 社区动态（多图 / 标签 / 可见范围 is_public / 状态 status：published\|takedown；点赞评论计数） |
-| comments | 单层评论（动态 id 与诊断 id 共用 parent_type 口径） |
-| post_likes | 动态点赞（一人一条，幂等切换） |
-| favorites | 收藏（帖子，一人一对象一条） |
-| follows | 关注关系（follower / followee） |
-| notifications | 站内通知（下架 / 系统公告等，作者与管理员均收） |
+**我的花园 · 一片地。** 植物不是列表，是种在一片草坡上：14 种作物有各自的插画，按品种落在地上，位置由植物 id 决定，刷新不会重新洗牌。鼠标悬停（手机上是点击）弹一张卡片，写清它叫什么、长什么样、健康状况、什么时候种的。点开进植物档案。
 
-### 模型融合口径
+**发现 · 种植社区。** 小红书式双列瀑布流。发帖支持多图（最多 9 张）、标签（最多 6 个）、公开或仅自己可见；能点赞、评论、收藏、关注。被管理员下架的帖子会进作者自己的草稿箱，改完能重新发。
 
-- **双病害模型**：PlantVillage（实验室叶片图，38 类）+ PlantDoc（真实场景图，28 类）。每张输入图做 6 视角裁片（原图 + 中心 70% + 2×2 六成网格）分别推理，跨视角取平均分排名、展示取最佳单视角峰值（`backend/app/fusion.py` 决策树）
-- **作物不一致以 PlantDoc 为准**（`PD_AUTHORITY=0.25`）：PlantVillage 是实验室模型，会出现高置信误判（如番茄→葡萄黑腐 0.929），以真实图模型纠偏
-- **置信度门控**：`DISEASE_GATE=0.65` 直采、`DISEASE_GATE_LOW=0.30` 采但标低置信；嫁接侧 `retake_confidence=0.30` 才要求重拍、`low_confidence_hint=0.60` 出结论 + 黄条（规则见 `config/fusion_rules.json`，改后需重启）
-- **物种兜底（PlantNet-300K）不可靠**：真实照片下易乱报且极端自信，根治靠真实照片微调；当前仅作兜底，不单独采信
+**个人资料 · 账号。** 注册登录、改昵称、六款 Avo 造型或上传自己的照片当头像、草稿箱、修改密码（在「编辑资料」里）、退出登录。
 
-## API 概览（后端统一跑在 `:8010`，管理接口前缀 `/api/admin`）
+**管理后台**（`/admin/`）。数据看板、用户增删与设管理员、帖子下架（附系统通知）与恢复、删评论。
 
-- **诊断**：`POST /analyze`（task_type 分诊断/嫁接/物种/纯拍照四场景）、`GET /varieties`、`GET /care/{crop}`
-- **认证**：`POST /auth/register`、`POST /auth/login`、`POST /auth/demo`（体验账号）、`POST /auth/logout`、`GET /auth/me`、`POST /auth/change-password`、`POST /auth/change-username`
-- **花园**：`GET /garden`、`GET /garden/{plant_id}`、`POST /garden`（新增植物）、`POST /garden/{plant_id}/photo`、`DELETE /garden/{plant_id}`、`POST /garden/{plant_id}/track`（建/复用追踪，去重）
-- **健康追踪**：`POST /tracks`、`GET /tracks`、`GET /tracks/{track_id}`（含 `image_url` 打卡照片）
-- **首页 / 天气**：`GET /home`（今日概览 + 我的植物）、`GET /weather`（Open-Meteo 免 key + IP 定位，失败回退演示数据）、`GET /todos`、`GET /diagnoses/recent`、`GET /diagnoses/{diagnosis_id}`
-- **社区**：`GET /posts?tab=recommend|latest`、`POST /posts`、`GET /posts/{post_id}`、`PUT /posts/{post_id}`（编辑草稿/帖子）、`DELETE /posts/{post_id}`、`PATCH /posts/{post_id}/visibility`、`GET /drafts`、`POST /posts/{post_id}/comments`、`POST /posts/{post_id}/like`、`POST /posts/{post_id}/favorite`
-- **用户 / 社交**：`GET /profile`、`POST /profile/update`（昵称 + 头像压 256px）、`POST /users/{user_id}/follow`、`GET /notifications`、`GET /notifications/unread_count`、`POST /notifications/read`
-- **管理端**（role=admin）：`GET /api/admin/stats`、`GET /api/admin/users`、`DELETE /api/admin/users/{uid}`、`POST /api/admin/users/{uid}/role`、`GET /api/admin/posts`、`DELETE /api/admin/posts/{pid}`、`POST /api/admin/posts/{pid}/takedown`、`POST /api/admin/posts/{pid}/restore`、`DELETE /api/admin/comments/{cid}`
+## 界面
 
-## 界面展示（移动端）
+手机端 390×844，桌面端 1440×900。
 
-| 首页 | 诊断 | 发现 |
-|:---:|:---:|:---:|
-| ![首页](docs/screenshots/home.png) | ![诊断](docs/screenshots/identify.png) | ![发现](docs/screenshots/discover.png) |
-| **我的花园** | **个人资料** | **健康追踪** |
-| ![我的花园](docs/screenshots/garden.png) | ![个人资料](docs/screenshots/profile.png) | ![健康追踪](docs/screenshots/track.png) |
-| **发笔记** | **帖子管理** | |
-| ![发笔记](docs/screenshots/compose.png) | ![帖子管理](docs/screenshots/post_actions.png) | |
+**首页** —— 天气、花园健康度、今日待办、我的植物，右下角相机直达诊断。
 
-## 快速开始
+![首页](docs/screenshots/home.jpg)
 
-### 后端（Python 3.11+，建议用自带虚拟环境）
+**诊断** —— 拍照 / 相册、识别、最近一次结果、常见问题快捷入口。
+
+![诊断](docs/screenshots/identify.jpg)
+
+**发现** —— 双列瀑布流，封面统一竖版 3:4。
+
+![发现](docs/screenshots/discover.jpg)
+
+**我的花园** —— 草坡上按品种种着，金字塔式排布，最多 7 株一块地。
+
+![我的花园](docs/screenshots/garden.jpg)
+
+**个人资料** —— 头像、统计、帖子 / 草稿 / 收藏 / 点赞 / 评论五个分栏。
+
+![个人资料](docs/screenshots/profile.jpg)
+
+**健康追踪** —— 状态判定、月历打卡、历次记录，趋势曲线在下方。
+
+![健康追踪](docs/screenshots/track.jpg)
+
+**发笔记** —— 多图、标签、可见范围，最下面标明发布身份。
+
+![发笔记](docs/screenshots/compose.jpg)
+
+**帖子详情与作者管理** —— 右上角「⋯」是作者自己的编辑 / 改可见范围 / 删除。
+
+![帖子详情](docs/screenshots/post_detail.jpg)
+![帖子管理](docs/screenshots/post_actions.jpg)
+
+**登录注册** —— 顶部「登录 | 注册」切换，也可以直接进演示花园。
+
+![登录](docs/screenshots/login.jpg)
+
+**编辑资料** —— 六款 Avo 造型任选或上传照片，底部是修改密码入口。
+
+![编辑资料](docs/screenshots/edit_profile.jpg)
+
+**桌面端** —— 宽度 ≥1024 时左侧改成导航栏，首页变两栏。
+
+![桌面端首页](docs/screenshots/pc_home.jpg)
+![桌面端花园](docs/screenshots/pc_garden.jpg)
+
+**管理后台**
+
+![管理后台](docs/screenshots/admin.jpg)
+
+## 技术选型
+
+**前端**：Expo React Native（SDK 51）+ React。同一套代码打包 Android APK，也 `expo export` 出 Web 静态页。桌面端做了等比缩放（`lib/webScale.js`），布局按 1440 宽设计，整页 `transform: scale()` 适配大屏，手机上 s=1 完全无感。
+
+**后端**：FastAPI + Uvicorn + SQLite（单文件 `backend/data/app.db`），跑在 8010。
+
+**视觉模型**：PlantVillage MobileNetV2（实验室病害 38 类）、PlantDoc EfficientNetV2（真实场景病害 28 类）、PlantNet-300K ResNet18（物种兜底）。权重本地化，运行期离线 CPU 推理。
+
+**部署**：Docker，仓库根有 `render.yaml` 可一键在 Render 建服务，构建期把模型下进镜像。
+
+## 识别是怎么判的
+
+**一张图切六个视角。** 原图、中心 70% 裁片、2×2 六成网格，共 6 片分别推理。排名用跨视角平均分（稳），展示的置信度取最佳单视角峰值（不失真）。
+
+**作物冲突听 PlantDoc 的。** PlantVillage 是实验室叶片图训练的，会在真实照片上高置信出错——比如把番茄判成葡萄黑腐、置信度 0.929。所以作物不一致时以 PlantDoc 为准（`PD_AUTHORITY=0.25`），用真实场景模型纠偏。
+
+**两档门控。** `DISEASE_GATE=0.65` 直接采信；`0.30` 到 `0.65` 之间照采但标低置信；低于 `0.30` 要求重拍。嫁接侧另一套：`retake_confidence=0.30` 才要求重拍，`low_confidence_hint=0.60` 出结论加黄条提示。规则在 `config/fusion_rules.json`，改完要重启后端。
+
+**物种兜底模型不可靠。** PlantNet-300K 在真实照片上容易乱报且极度自信，只当兜底、不单独采信。根治得靠真实照片微调，那是另一件事。
+
+## 接口一览
+
+后端统一 `:8010`，管理接口前缀 `/api/admin`。
+
+**识别**：`POST /analyze`（`task_type` 分诊断 / 嫁接 / 物种 / 纯拍照四种场景）、`GET /varieties`、`GET /care/{crop}`
+
+**认证**：`POST /auth/register`、`POST /auth/login`、`POST /auth/demo`（一键体验号）、`POST /auth/logout`、`GET /auth/me`、`POST /auth/change-password`、`POST /auth/change-username`
+
+**花园**：`GET /garden`、`GET /garden/{plant_id}`、`POST /garden`、`POST /garden/{plant_id}/photo`、`DELETE /garden/{plant_id}`、`POST /garden/{plant_id}/track`（建或复用追踪，会去重）
+
+**追踪**：`POST /tracks`、`GET /tracks`、`GET /tracks/{track_id}`
+
+**首页 / 天气**：`GET /home`（今日概览 + 我的植物）、`GET /weather`（Open-Meteo 免 key + IP 定位，失败回退演示数据）、`GET /todos`、`GET /diagnoses/recent`、`GET /diagnoses/{id}`
+
+**社区**：`GET /posts`、`POST /posts`、`GET /posts/{id}`、`PUT /posts/{id}`、`DELETE /posts/{id}`、`PATCH /posts/{id}/visibility`、`GET /drafts`、评论、点赞、收藏
+
+**用户 / 社交**：`GET /profile`、`POST /profile/update`（昵称 + 头像，头像压到 256px）、`POST /users/{id}/follow`、通知相关三个接口
+
+**管理端**（需 role=admin）：`GET /api/admin/stats`、用户列表 / 删除 / 改角色、帖子列表 / 下架 / 恢复、删评论
+
+## 跑起来
+
+### 一键起（推荐）
+
+```bash
+node scripts/start_servers.js
+```
+
+脚本先探 3000 和 8010，没在跑的用独立进程拉起来，已经在跑的跳过。然后打开 `http://localhost:3000`。
+
+### 手动起后端
 
 ```bash
 cd backend
 IDENTIFIER=model uvicorn app.main:app --host 0.0.0.0 --port 8010
 ```
 
-打开 `http://localhost:8010/health` 自检，或 `http://localhost:8010/test/live_test.html` 用网页测试台。`backend/models/` 仅内置物种模型（PlantNet，约 45MB）；两个病害模型首次启动从 HuggingFace 下载缓存，国内网络不通时加 `HF_ENDPOINT=https://hf-mirror.com`。
+`http://localhost:8010/health` 自检，`http://localhost:8010/docs` 是自动生成的接口文档。`backend/models/` 里只内置了物种模型（约 45MB）；两个病害模型首次启动从 HuggingFace 下载缓存，国内网络不通就加 `HF_ENDPOINT=https://hf-mirror.com`。
 
-### 前端网页版（Node 22+，最省事，无需 Expo 开发服务器）
+### 手动起前端网页版
 
 ```bash
 cd frontend
 npx expo export --platform web   # 产物在 frontend/dist/
-node serve.js                    # 打开 http://localhost:3000
+node serve.js                    # http://localhost:3000
 ```
 
-前端 API 地址：网页版固定 `http://localhost:8010`（`frontend/lib/config.js`，已注入 `notranslate` 防浏览器翻译冻结文案）；真机调试改 `LAN_API_URL` 为电脑局域网 IP。
+网页端的 API 地址固定是 `http://localhost:8010`（`frontend/lib/config.js`）。注意 `expo export` 会把 `app.json` 里的 `extra.apiUrl` 烤进网页包，所以改完后端地址后要重新打包，不然会连不上。
 
-### 前端真机 / 模拟器
+### 真机 / 模拟器
 
 ```bash
 cd frontend
 npm install
-npx expo start        # 真机用 Expo Go 扫码；浏览器预览用网页模式
+npx expo start        # 真机用 Expo Go 扫码
 ```
 
-### 演示账号
+真机连电脑上的后端要把 `app.json` 的 `extra.apiUrl` 改成局域网 IP。
 
-| 角色 | 账号 | 密码 | 说明 |
-|--|--|--|--|
-| 管理员 | `admin` | `admin123` | 用户治理 / 帖子下架恢复 / 删评论 / 看板 |
-| 体验账号 | 自助注册 | 任意 | 首页「体验」按钮一键建演示号，含演示花园与帖子 |
+## 账号
 
-## 目录结构
+**管理员**：`admin` / `admin123`，能用后台全部功能。公开部署前记得用环境变量 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 改掉。
 
-```
-60-项目代码
-├── backend
-│   ├── app/                # FastAPI 源码（main 路由 / fusion 融合决策 / predict 推理 / db 数据层 / weather 天气 / care 养护建议）
-│   ├── models/plantnet/    # 物种模型权重（PlantNet-300K ResNet18，约 45MB）
-│   ├── data/               # SQLite（app.db）+ 上传图片 uploads/
-│   ├── tests/              # 模型冒烟 / API / 逻辑单测
-│   ├── Dockerfile + DEPLOY.md   # 镜像构建与部署说明
-│   └── requirements.txt
-├── frontend
-│   ├── screens/            # 五个 tab 页面：Home / Identify / Community / Garden / Profile
-│   ├── components/         # SmartImage（图片兜底）/ VarietyPicker（品种选择）
-│   ├── lib/                # config（API 地址）/ api / webScale（桌面等比缩放）/ time / version
-│   ├── assets/             # 吉祥物 Avo 四主题图 + 图标
-│   ├── serve.js            # 网页静态服务（注入 notranslate，3000 端口）
-│   └── app.json + eas.json # Expo 配置 / EAS 打包（preview = APK）
-├── config/
-│   ├── fusion_rules.json   # 病害识别融合门控规则（改后重启后端）
-│   └── varieties.json      # 嫁接品种库（14 种，精确匹配）
-├── prototype/              # 原型设计 + 吉祥物源文件 + live_test 网页测试台
-├── test_samples/           # 自测用示例植物照片
-├── docs/screenshots/       # README 界面截图（5 张）
-├── docs/preview/           # 开发期间的 UI 调试截图（preview_*.png，不入库）
-├── logs/                   # 本地开发服务日志（*.log，不入库）
-├── deploy/                 # HF Spaces 部署说明
-├── render.yaml             # Render Blueprint（连 GitHub 自动建服务）
-└── 需求分析文档_v2.1_安卓版.md
+**体验号**：首页或登录页的「先看看演示花园」，服务端自动建一个带植物、带诊断记录、带帖子的演示账号，不用注册。
+
+**普通账号**：自己注册，用户名和密码都行，密码至少 4 位。
+
+## 自测
+
+```bash
+node scripts/test_backend.js 3   # 主流程 84 项，跑三轮，约 40 秒
+node scripts/test_admin.js       # 管理接口 25 项
 ```
 
-## 部署后端（拿 HTTPS 地址）
+第一个脚本每轮用随机账号注册、跑完全流程、自己清理；覆盖认证、权限隔离、花园增删改、图片上传、社区全套、私密帖隔离、4 个识别场景。第二个要提权才能测管理接口，脚本直接用 sqlite 把临时账号提成 admin，跑完在 `finally` 里降级删号。
 
-后端用 Docker 一键部署到 Render（免费实例），详见 `backend/DEPLOY.md`；仓库根 `render.yaml` 已写好 Blueprint，连接 GitHub 仓库即自动建服务，构建期把三个模型下进镜像、运行期离线。
+识别是走真模型的，单图诊断 0.8–3 秒，嫁接双图 1.6–5.5 秒，跑第二轮之后会明显变快。
 
-重点：打包 APK / 发正式版前，必须先把 `frontend/app.json` 里的 `extra.apiUrl` 改成后端 HTTPS 地址，再重新 `eas build`，否则真机连不上本地后端。
+**没覆盖的**：并发写入、大文件上传、长时间运行的内存增长，以及识别**准不准**——脚本只验证接口返回结构合理，准确率评估是另一套离线评测的事。
 
-## 打包安卓 APK
+## 目录
+
+```
+├── backend/
+│   ├── app/            FastAPI 源码（main 路由 / fusion 融合决策 / predict 推理 / db 数据层 / weather 天气 / care 养护建议）
+│   ├── admin/          管理后台静态页，挂在 /admin/
+│   ├── models/         物种模型权重
+│   ├── data/           SQLite 与上传的图片（不入库）
+│   └── tests/
+├── frontend/
+│   ├── screens/        五个 tab：Home / Identify / Community / Garden / Profile，加 Login、PlantDetail、Track、Analyze
+│   ├── components/     GardenLawn（草坡）/ FadeUp / TapCard / Skeleton / SmartImage / VarietyPicker
+│   ├── lib/            api / config / theme（设计 token）/ crops（品种与外观描述）/ avatar / plantStatus / webScale / time
+│   ├── assets/         吉祥物、14 种作物插画、背景图
+│   └── serve.js        网页静态服务，3000
+├── config/             fusion_rules.json（融合门控）/ varieties.json（品种库）
+├── scripts/            start_servers / test_backend / test_admin / cut_plants（作物插画抠图）
+├── docs/screenshots/   README 用的界面截图
+├── prototype/          原型与吉祥物源文件
+└── test_samples/       自测用的植物照片
+```
+
+## 打包 APK
 
 ```bash
 cd frontend
 eas build --platform android --profile preview
 ```
 
-`frontend/eas.json` 的 preview 已设 `buildType: "apk"`，产物是可直接安装的 APK（非 AAB）。前提：已 `eas init` 并登录 Expo 账号。
+`frontend/eas.json` 的 preview 配了 `buildType: "apk"`，产物可直接安装。前提是已 `eas init` 并登录 Expo 账号。
 
-## 注意事项
+打包前一定先把 `app.json` 的 `extra.apiUrl` 换成后端 HTTPS 地址，否则真机连不上本地后端。
 
-- **模型许可证**：物种模型 PlantNet-300K 为 Apache-2.0；两个病害模型许可证为 `other`，课程自用无碍，公开发布前请另行确认授权
-- **数据持久化**：免费托管磁盘不持久，SQLite 与上传图片会在实例重启后丢失；空库会自动种演示帖与演示花园
-- **管理员账号**：默认 `admin / admin123`，任何公开部署请通过环境变量 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 改掉
-- **上传图片**：发帖 / 头像 / 追踪图片存在后端本地 `backend/data/uploads/`，上云后建议接对象存储做持久化
-- **定位反向地理编码**：Open-Meteo + ipwho.is 按出口 IP 定位，无可用反向编码服务（nominatim/bigdatacloud 均不可达），坐标离 IP 定位 50km 内借城市名、否则显示「当前位置」
+## 部署后端
+
+`backend/DEPLOY.md` 有完整步骤，仓库根的 `render.yaml` 是 Blueprint，连上 GitHub 仓库就自动建服务。构建期把三个模型下进镜像，运行期离线。
+
+## 几个已知限制
+
+**模型许可证**：物种模型 PlantNet-300K 是 Apache-2.0；两个病害模型标的是 `other`，课程自用没问题，公开发布前得单独确认授权。
+
+**数据不持久**：免费托管方案的磁盘是临时的，SQLite 和上传图片会在实例重启后丢。空库启动会自动种演示帖和演示花园。
+
+**上传图片存在本地**：`backend/data/uploads/`，上云后建议换对象存储。
+
+**定位**：Open-Meteo 拿天气、ipwho.is 按出口 IP 定位。浏览器能拿到 GPS 坐标时前端会传 `?lat=&lon=` 过来，精度更高。没有可用的反向地理编码服务（nominatim、bigdatacloud 都不通），所以坐标离 IP 定位超过 50km 就只显示「当前位置」。

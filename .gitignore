@@ -25,6 +25,8 @@ server.start.txt
 # ── 调试 / 过程文件 ──
 preview_*.png
 crop_*.png
+# 开发期间的 UI 调试图，随手截图都堆在这里，不进城仓库
+docs/preview/
 
 # ── 项目内部记忆（含本地笔记，勿提交）──
 .workbuddy/

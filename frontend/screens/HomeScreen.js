@@ -12,7 +12,7 @@ import PlantDetailScreen from './PlantDetailScreen';
 import { API_URL } from '../lib/config';
 import SmartImage from '../components/SmartImage';
 import { avatarSource } from '../lib/avatar';
-import { CROPS } from '../lib/crops';
+import { CROPS, cropEmoji } from '../lib/crops';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
 
@@ -429,7 +429,8 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
             <SmartImage
               uri={plantPhotoUri(p)}
               style={styles.plantAvatarImg}
-              fallback={<Text style={{ fontSize: 40 }}>{p.photo_emoji || '🌱'}</Text>}
+              // 没拍过照片时按「品种」给 emoji，别一律显示同一个小芽
+              fallback={<Text style={{ fontSize: 40 }}>{p.photo_emoji || cropEmoji(p.crop)}</Text>}
             />
           </View>
           <Text style={styles.plantName} numberOfLines={1}>{p.nickname}</Text>
@@ -468,8 +469,12 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
     return (
       <View style={styles.mascotAside}>
         <Image source={MASCOT} style={styles.mascotAsideImg} resizeMode="contain" />
-        <Text style={styles.mascotAsideTitle}>我是 Avo 🌱</Text>
-        <Text style={styles.mascotAsideText}>常来给植物拍张照，{'\n'}我帮你看看它们今天状态怎么样～</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.mascotAsideTitle}>我是 Avo 🌱</Text>
+          <Text style={styles.mascotAsideText} numberOfLines={2}>
+            常来给植物拍张照，我帮你盯着它们～
+          </Text>
+        </View>
       </View>
     );
   }
@@ -577,7 +582,8 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
                       <Text style={{ fontSize: 11, color: '#fff' }}>{todos.length ? todos.length : '✓'}</Text>
                     </View>
                   </View>
-                  <Text style={styles.statValueSmall} numberOfLines={1}>
+                  {/* 待办文案带植物名，一行放不下会截成「为「马铃薯」建立健…」，给两行 */}
+                  <Text style={styles.statValueSmall} numberOfLines={2}>
                     {todos.length ? todos[0].text : '已完成'}
                   </Text>
                   <Text style={styles.statSub}>{todos.length ? `还有 ${todos.length} 项，点开任务清单 ›` : '今天见 🌞'}</Text>
@@ -669,16 +675,20 @@ const styles = StyleSheet.create({
   scrollPc: { padding: 26, paddingBottom: 40 },
   colsPc: { flexDirection: 'row', gap: 22, alignItems: 'flex-start' },
   colPc: { flex: 1, minWidth: 0 },
-  plantGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 6 },
+  // flex:1 + minWidth:0 是必须的：不给的话网格按内容撑宽（3 张卡 410px），
+  // 会把右边陪伴卡挤出面板、第三张卡被裁掉一半。
+  plantGrid: { flex: 1, minWidth: 0, flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 6 },
   // PC：「我的植物」面板里 植物卡 + Avo 陪伴卡 并排，撑满面板宽度
-  plantPanelRow: { flexDirection: 'row', alignItems: 'stretch', gap: 12 },
+  plantPanelRow: { gap: 12 },
+  // 陪伴卡横着放在植物下面：竖排侧栏会跟植物网格抢宽度，把卡片挤成一列。
+  // paddingRight 是给右下角的相机悬浮按钮让位，否则文案末尾会被它盖住。
   mascotAside: {
-    flex: 1, minWidth: 150, backgroundColor: '#EAF6DF', borderRadius: 14,
-    padding: 14, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#EAF6DF', borderRadius: 14, padding: 12, paddingRight: 72, gap: 12,
   },
-  mascotAsideImg: { width: 110, height: 110, marginBottom: 8 },
-  mascotAsideTitle: { fontSize: 15, fontWeight: '800', color: '#1F3D10', textAlign: 'center' },
-  mascotAsideText: { fontSize: 12, color: '#5A6B4E', marginTop: 3, textAlign: 'center', lineHeight: 18 },
+  mascotAsideImg: { width: 56, height: 56 },
+  mascotAsideTitle: { fontSize: 14, fontWeight: '800', color: '#1F3D10' },
+  mascotAsideText: { fontSize: 12, color: '#5A6B4E', marginTop: 3, lineHeight: 17, flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 },
   h1: { fontSize: 30, fontWeight: '900', color: '#1F3D10' },
   slogan: { fontSize: 13, color: C.sub, marginTop: 2 },
