@@ -4,7 +4,6 @@ import {
   Modal, FlatList,
 } from 'react-native';
 import { getHome, getTodos, getNotifications, getUnreadCount, markNotificationsRead, createPlantTrack } from '../lib/api';
-import PageBackground from '../components/PageBackground';
 import LikeBurst from '../components/LikeBurst';
 import FadeUp from '../components/FadeUp';
 import TapCard from '../components/TapCard';
@@ -16,6 +15,9 @@ import { avatarSource } from '../lib/avatar';
 import { CROPS } from '../lib/crops';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
+
+// 首页底纹：小树 / 蝴蝶结 / 小鸟的童趣印花，压低透明度当纸纹用
+const HOME_BG = require('../assets/home_bg.jpg');
 import { getCoords, getCachedCoords } from '../lib/location';
 
 const MASCOT = require('../assets/mascot_identify.png');
@@ -474,7 +476,10 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
 
   return (
     <View style={styles.root}>
-      <PageBackground variant="green" />
+      {/* 首页不再用光斑背景：印花已经是装饰了，两套叠一起会显得脏 */}
+      <View style={[styles.homeBg, isDesktop && styles.homeBgPc]} pointerEvents="none">
+        <Image source={HOME_BG} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      </View>
       <ScrollView contentContainerStyle={[styles.scroll, isDesktop && styles.scrollPc]} showsVerticalScrollIndicator={false}>
         {/* 头部 */}
         <View style={styles.header}>
@@ -656,6 +661,10 @@ export default function HomeScreen({ user, onGoTab, onOpenAnalyze, onOpenTrack, 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg },
+  // 印花底纹：0.34 的透明度刚好能看出花纹，又不至于干扰读文字
+  homeBg: { ...StyleSheet.absoluteFillObject, opacity: 0.34, zIndex: 0 },
+  // 宽屏一屏能看到的图案更多，容易显花，再压一档
+  homeBgPc: { opacity: 0.24 },
   scroll: { padding: 16, paddingBottom: 90 },
   scrollPc: { padding: 26, paddingBottom: 40 },
   colsPc: { flexDirection: 'row', gap: 22, alignItems: 'flex-start' },
