@@ -37,7 +37,7 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
   const [pickedPreset, setPickedPreset] = useState(null); // 选中的预置造型 key
   const [saving, setSaving] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false); // 退出登录二次确认
-  const [pwdOpen, setPwdOpen] = useState(false);   // 修改密码弹层
+  const [pwdPanel, setPwdPanel] = useState(false);  // 编辑资料弹层里切到「修改密码」子页
   const [oldPwd, setOldPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const [newPwd2, setNewPwd2] = useState('');
@@ -96,7 +96,16 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
     setPickedImage(null);
     // 当前头像本来就是某个预置造型的话，打开弹层时它就显示成选中态
     setPickedPreset(presetKey(u?.avatar_url));
+    setPwdPanel(false);
+    setPwdDone(false);
+    setPwdError('');
     setEditing(true);
+  }
+
+  // 关掉整个编辑弹层时，把「修改密码」子页也复位，下次进来还是资料表单
+  function closeEdit() {
+    setEditing(false);
+    setPwdPanel(false);
   }
 
   // 点同一个造型再点一次就取消选中，方便已经选过的人反悔
@@ -144,13 +153,13 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
     finally { setSaving(false); }
   }
 
-  function openPwd() {
+  function openPwdPanel() {
     setOldPwd('');
     setNewPwd('');
     setNewPwd2('');
     setPwdError('');
     setPwdDone(false);
-    setPwdOpen(true);
+    setPwdPanel(true);
   }
 
   async function submitPwd() {
@@ -207,8 +216,75 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         {/* 编辑资料弹窗 */}
-        <Modal visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
+        <Modal visible={editing} animationType="slide" onRequestClose={closeEdit}>
           <View style={styles.modal}>
+            {pwdPanel ? (
+              // ── 子页：修改密码（和编辑资料共用一个 Modal，避免弹层套弹层的层级问题）──
+              <>
+                <TouchableOpacity onPress={() => setPwdPanel(false)}>
+                  <Text style={styles.modalBack}>‹ 返回</Text>
+                </TouchableOpacity>
+
+                {pwdDone ? (
+                  <>
+                    <Text style={styles.modalTitle}>密码已更新</Text>
+                    <Text style={styles.modalHint}>
+                      下次登录请用新密码。当前登录状态不受影响，可以继续用。
+                    </Text>
+                    <TouchableOpacity style={styles.pwdOkBtn} onPress={() => setPwdPanel(false)}>
+                      <Text style={styles.pwdOkText}>知道了</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.modalTitle}>修改密码</Text>
+                    <Text style={styles.modalHint}>为了安全，需要先输入当前密码</Text>
+
+                    <TextInput
+                      style={[styles.input, { marginTop: 16 }]}
+                      placeholder="当前密码"
+                      placeholderTextColor={C.gray}
+                      secureTextEntry
+                      value={oldPwd}
+                      onChangeText={setOldPwd}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="新密码（至少 4 位）"
+                      placeholderTextColor={C.gray}
+                      secureTextEntry
+                      value={newPwd}
+                      onChangeText={setNewPwd}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="再输一次新密码"
+                      placeholderTextColor={C.gray}
+                      secureTextEntry
+                      value={newPwd2}
+                      onChangeText={setNewPwd2}
+                    />
+
+                    {pwdError ? <Text style={styles.modalError}>{pwdError}</Text> : null}
+
+                    <TouchableOpacity
+                      style={[styles.saveBtn, pwdBusy && styles.disabled]}
+                      onPress={submitPwd}
+                      disabled={pwdBusy}
+                    >
+                      {pwdBusy
+                        ? <ActivityIndicator color="#fff" />
+                        : <Text style={styles.saveText}>确认修改</Text>}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setPwdPanel(false)}>
+                      <Text style={styles.cancelText}>取消</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            ) : (
+              // ── 主页：头像 + 昵称 ──
+              <>
             <Text style={styles.modalTitle}>编辑资料</Text>
             <Text style={styles.modalHint}>头像和昵称以后随时都能改</Text>
 
@@ -276,9 +352,18 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
                 ? <ActivityIndicator color="#fff" />
                 : <Text style={styles.saveText}>保存</Text>}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditing(false)}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={closeEdit}>
               <Text style={styles.cancelText}>取消</Text>
             </TouchableOpacity>
+
+            {/* 改密码收进这里，个人主页外面不再单开一块 */}
+            <View style={styles.pwdDivider} />
+            <TouchableOpacity style={styles.pwdEntry} onPress={openPwdPanel} activeOpacity={0.7}>
+              <Text style={styles.pwdEntryText}>修改密码</Text>
+              <Text style={styles.pwdEntryArrow}>›</Text>
+            </TouchableOpacity>
+              </>
+            )}
           </View>
         </Modal>
 
@@ -379,22 +464,10 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
           </View>
         )}
 
-        {/* 账号操作：改密码 / 退出登录。改密码的后端接口早就有了，之前一直没接界面 */}
-        <View style={styles.accountCard}>
-          <TouchableOpacity style={styles.accountRow} onPress={openPwd} activeOpacity={0.7}>
-            <Text style={styles.accountLabel}>修改密码</Text>
-            <Text style={styles.accountArrow}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.accountLine} />
-          <TouchableOpacity
-            style={styles.accountRow}
-            onPress={() => setConfirmLogout(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.accountLabel, styles.accountLabelMuted]}>退出登录</Text>
-            <Text style={styles.accountArrow}>›</Text>
-          </TouchableOpacity>
-        </View>
+        {/* 改密码收进了上面的编辑资料弹层，这里只留退出 */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={() => setConfirmLogout(true)}>
+          <Text style={styles.logoutText}>退出登录</Text>
+        </TouchableOpacity>
 
         {/* 版本号：用来判断当前页是不是最新构建 */}
         <Text style={styles.version}>版本 {BUILD_STAMP}</Text>
@@ -408,66 +481,6 @@ export default function ProfileScreen({ user, onLogin, onLogout, onOpenPost, ope
         onClose={() => setDraftEditing(null)}
         onDone={async () => { setDraftEditing(null); setSeg('posts'); await load(); }}
       />
-
-      {/* 修改密码：成功后不强制重登（后端只换密码、不动当前 session） */}
-      {pwdOpen ? (
-        <View style={styles.confirmMask}>
-          <View style={styles.pwdCard}>
-            {pwdDone ? (
-              <>
-                <Text style={styles.confirmTitle}>密码已更新</Text>
-                <Text style={styles.confirmBody}>
-                  下次登录请用新密码。当前登录状态不受影响，可以继续用。
-                </Text>
-                <TouchableOpacity style={styles.pwdOkBtn} onPress={() => setPwdOpen(false)}>
-                  <Text style={styles.pwdOkText}>知道了</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Text style={styles.confirmTitle}>修改密码</Text>
-                <Text style={styles.confirmBody}>为了安全，需要先输入当前密码</Text>
-                <TextInput
-                  style={styles.pwdInput}
-                  placeholder="当前密码"
-                  secureTextEntry
-                  value={oldPwd}
-                  onChangeText={setOldPwd}
-                />
-                <TextInput
-                  style={styles.pwdInput}
-                  placeholder="新密码（至少 4 位）"
-                  secureTextEntry
-                  value={newPwd}
-                  onChangeText={setNewPwd}
-                />
-                <TextInput
-                  style={styles.pwdInput}
-                  placeholder="再输一次新密码"
-                  secureTextEntry
-                  value={newPwd2}
-                  onChangeText={setNewPwd2}
-                />
-                {pwdError ? <Text style={styles.pwdError}>{pwdError}</Text> : null}
-                <View style={styles.confirmRow}>
-                  <TouchableOpacity style={styles.confirmCancel} onPress={() => setPwdOpen(false)}>
-                    <Text style={styles.confirmCancelText}>取消</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.pwdSubmit, pwdBusy && styles.disabled]}
-                    onPress={submitPwd}
-                    disabled={pwdBusy}
-                  >
-                    {pwdBusy
-                      ? <ActivityIndicator color="#fff" />
-                      : <Text style={styles.pwdSubmitText}>确认修改</Text>}
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      ) : null}
 
       {/* 退出登录二次确认（网页端 Alert 多按钮不可用，用自定义弹层） */}
       {confirmLogout ? (
@@ -661,16 +674,11 @@ const styles = StyleSheet.create({
   tileFoot: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   tileAuthor: { flex: 1, fontSize: 11, color: C.sub },
   tileLike: { fontSize: 11, color: C.sub },
-  // 账号操作区（改密码 / 退出登录）
-  accountCard: {
-    marginTop: 18, backgroundColor: '#fff', borderRadius: 12,
-    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
+  logoutBtn: {
+    marginTop: 18, borderWidth: 1, borderColor: C.border, borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff',
   },
-  accountRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 },
-  accountLabel: { flex: 1, fontSize: 14, color: C.text, fontWeight: '600' },
-  accountLabelMuted: { color: C.sub, fontWeight: '400' },
-  accountArrow: { fontSize: 16, color: C.gray },
-  accountLine: { height: 1, backgroundColor: '#F0F4EA', marginLeft: 16 },
+  logoutText: { color: C.sub, fontSize: 14 },
   version: { textAlign: 'center', color: C.gray, fontSize: 11, marginTop: 18, marginBottom: 8 },
   // 退出登录二次确认（absolute 覆盖整页，避开网页端 Modal 叠层问题）
   confirmMask: {
@@ -686,23 +694,17 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#F1F3EE', borderRadius: 12,
     paddingVertical: 12, alignItems: 'center',
   },
-  // 修改密码弹层（比确认框高，输入框竖排）
-  pwdCard: { width: '100%', maxWidth: 360, backgroundColor: '#fff', borderRadius: 18, padding: 20 },
-  pwdInput: {
-    backgroundColor: '#fff', borderWidth: 1, borderColor: C.border, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginTop: 10, color: C.text,
-  },
-  pwdError: { color: '#C2410C', fontSize: 12, marginTop: 10 },
-  pwdSubmit: {
-    flex: 1, backgroundColor: C.greenDark, borderRadius: 12,
-    paddingVertical: 12, alignItems: 'center',
-  },
-  pwdSubmitText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  // 改密码子页：返回 / 成功态按钮 / 编辑资料里的入口行
+  modalBack: { color: C.greenDark, fontSize: 13, fontWeight: '700', marginBottom: 12 },
   pwdOkBtn: {
-    marginTop: 18, backgroundColor: C.greenDark, borderRadius: 12,
-    paddingVertical: 12, alignItems: 'center',
+    marginTop: 20, backgroundColor: C.greenDark, borderRadius: 12,
+    paddingVertical: 13, alignItems: 'center',
   },
-  pwdOkText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  pwdOkText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  pwdDivider: { height: 1, backgroundColor: '#EDF3E5', marginTop: 22, marginBottom: 4 },
+  pwdEntry: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  pwdEntryText: { flex: 1, fontSize: 14, color: C.text, fontWeight: '600' },
+  pwdEntryArrow: { fontSize: 16, color: C.gray },
   confirmCancelText: { color: C.text, fontSize: 14, fontWeight: '700' },
   confirmDanger: {
     flex: 1, backgroundColor: '#C2410C', borderRadius: 12,

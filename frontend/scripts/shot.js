@@ -83,8 +83,8 @@ function getTargets() {
   }
 
   // REAL_CLICK='文本'：用真实鼠标事件点一下（走浏览器命中测试，能测出被遮挡/点不动的问题）
-  if (process.env.REAL_CLICK) {
-    const target = process.env.REAL_CLICK;
+  // REAL_CLICK2='文本'：点第二下，用来测「先开弹层、再点弹层里某个按钮」这类两步交互
+  async function realClick(target, label) {
     const r = await send('Runtime.evaluate', {
       expression: `(() => {
         const el = [...document.querySelectorAll('div,span')].filter(e => e.textContent.trim() === ${JSON.stringify(target)}).pop();
@@ -96,15 +96,22 @@ function getTargets() {
     });
     const pt = r && r.result && r.result.value;
     if (!pt) {
-      console.log('REAL_CLICK: 没找到元素', target);
-    } else {
-      console.log('REAL_CLICK 目标框:', JSON.stringify(pt));
-      const base = { x: pt.x, y: pt.y, button: 'left', clickCount: 1 };
-      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: base.x, y: base.y });
-      await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...base });
-      await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...base });
-      await new Promise((res) => setTimeout(res, 1200));
+      console.log(`${label}: 没找到元素`, target);
+      return;
     }
+    console.log(`${label} 目标框:`, JSON.stringify(pt));
+    const base = { x: pt.x, y: pt.y, button: 'left', clickCount: 1 };
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: base.x, y: base.y });
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...base });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...base });
+    await new Promise((res) => setTimeout(res, 1200));
+  }
+
+  if (process.env.REAL_CLICK) {
+    await realClick(process.env.REAL_CLICK, 'REAL_CLICK');
+  }
+  if (process.env.REAL_CLICK2) {
+    await realClick(process.env.REAL_CLICK2, 'REAL_CLICK2');
   }
 
 
