@@ -82,19 +82,25 @@ function getTargets() {
     await new Promise((r) => setTimeout(r, 1500));
   }
 
-  // REAL_CLICK='文本'：用真实鼠标事件点一下（走浏览器命中测试，能测出被遮挡/点不动的问题）
+  // REAL_CLICK='文本' 或 'x,y'：用真实鼠标事件点一下（走浏览器命中测试，能测出被遮挡/点不动的问题）
   // REAL_CLICK2='文本'：点第二下，用来测「先开弹层、再点弹层里某个按钮」这类两步交互
   async function realClick(target, label) {
-    const r = await send('Runtime.evaluate', {
-      expression: `(() => {
-        const el = [...document.querySelectorAll('div,span')].filter(e => e.textContent.trim() === ${JSON.stringify(target)}).pop();
-        if (!el) return null;
-        const b = el.getBoundingClientRect();
-        return { x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width, h: b.height };
-      })()`,
-      returnByValue: true,
-    });
-    const pt = r && r.result && r.result.value;
+    let pt = null;
+    if (/^-?\d+,-?\d+$/.test(target)) {
+      const [x, y] = target.split(',').map(Number);
+      pt = { x, y };
+    } else {
+      const r = await send('Runtime.evaluate', {
+        expression: `(() => {
+          const el = [...document.querySelectorAll('div,span')].filter(e => e.textContent.trim() === ${JSON.stringify(target)}).pop();
+          if (!el) return null;
+          const b = el.getBoundingClientRect();
+          return { x: b.x + b.width / 2, y: b.y + b.height / 2, w: b.width, h: b.height };
+        })()`,
+        returnByValue: true,
+      });
+      pt = r && r.result && r.result.value;
+    }
     if (!pt) {
       console.log(`${label}: 没找到元素`, target);
       return;
@@ -112,6 +118,34 @@ function getTargets() {
   }
   if (process.env.REAL_CLICK2) {
     await realClick(process.env.REAL_CLICK2, 'REAL_CLICK2');
+  }
+
+  // REAL_HOVER='x,y' 或 '文本'：把鼠标移到目标上但不点击，用来截 hover 态
+  if (process.env.REAL_HOVER) {
+    const spec = process.env.REAL_HOVER;
+    let pt = null;
+    if (/^-?\d+,-?\d+$/.test(spec)) {
+      const [x, y] = spec.split(',').map(Number);
+      pt = { x, y };
+    } else {
+      const r = await send('Runtime.evaluate', {
+        expression: `(() => {
+          const el = [...document.querySelectorAll('div,span')].filter(e => e.textContent.trim() === ${JSON.stringify(spec)}).pop();
+          if (!el) return null;
+          const b = el.getBoundingClientRect();
+          return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+        })()`,
+        returnByValue: true,
+      });
+      pt = r && r.result && r.result.value;
+    }
+    if (!pt) {
+      console.log('REAL_HOVER: 没找到目标', spec);
+    } else {
+      console.log('REAL_HOVER 位置:', JSON.stringify(pt));
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: pt.x, y: pt.y });
+      await new Promise((res) => setTimeout(res, 700));
+    }
   }
 
 

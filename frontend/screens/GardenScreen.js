@@ -7,12 +7,10 @@ import { compressImage } from '../lib/compress';
 import { listGarden, addPlant, createPlantTrack, uploadPlantPhoto } from '../lib/api';
 import PageBackground from '../components/PageBackground';
 import PlantDetailScreen from './PlantDetailScreen';
-import SmartImage from '../components/SmartImage';
 import FadeUp from '../components/FadeUp';
-import TapCard from '../components/TapCard';
+import GardenLawn from '../components/GardenLawn';
 import { SkeletonRows } from '../components/Skeleton';
 import { CROPS } from '../lib/crops';
-import { API_URL } from '../lib/config';
 import { C } from '../lib/theme';
 import { useLayout } from '../lib/responsive';
 
@@ -20,20 +18,7 @@ const MASCOT_TRACK = require('../assets/mascot_track.png');
 const ICON_CAM = require('../assets/icon_camera.png');
 const ICON_ALB = require('../assets/icon_album.png');
 
-function cropZh(en) {
-  return CROPS.find((c) => c.en === en)?.zh || en || '未设品种';
-}
-
-function statusOf(p) {
-  const rec = p.last_record;
-  if (!rec) return { text: '未记录', color: C.sub, bg: '#EFF2EC' };
-  if (rec.disease_label === 'healthy') return { text: '健康', color: '#1E7B34', bg: '#E2F5E5' };
-  if (rec.disease_label === 'diseased')
-    return { text: rec.low_confidence ? '需关注' : '异常', color: '#C2410C', bg: '#FDEBDD' };
-  return { text: '观察中', color: '#8A6D1A', bg: '#FBF3D9' };
-}
-
-// 我的花园 tab：植物记录列表（体现健康状况），点开看档案 / 诊断历史 / 照养指南
+// 我的花园 tab：把植物种在一片草坪上，点开看档案 / 诊断历史 / 照养指南
 export default function GardenScreen({ user, onOpenTrack, onGoIdentify, openPlantId, onPlantOpened, onGoHome }) {
   const { isDesktop } = useLayout();
   const [plants, setPlants] = useState([]);
@@ -147,47 +132,32 @@ export default function GardenScreen({ user, onOpenTrack, onGoIdentify, openPlan
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {loading ? <SkeletonRows rows={4} /> : null}
         {!loading && plants.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🪴</Text>
-            <Text style={styles.emptyText}>还没有植物，点右下角「+」添加第一株吧</Text>
+            <Text style={styles.emptyText}>这块地还空着，点右下角「+」种下第一株吧</Text>
           </View>
         ) : null}
 
-        {plants.map((p, i) => {
-          const st = statusOf(p);
-          return (
-            <FadeUp key={p.id} index={i} style={{ marginBottom: 12 }}>
-            <TapCard style={styles.card} onPress={() => setDetailId(p.id)}>
-              <SmartImage
-                uri={p.photo_url ? (p.photo_url.startsWith('http') ? p.photo_url : `${API_URL}${p.photo_url}`) : null}
-                style={styles.cardPhoto}
-                fallback={<View style={styles.avatarBox}><Text style={styles.cardEmoji}>{p.photo_emoji || '🌱'}</Text></View>}
-              />
-              <View style={styles.cardBody}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.cardName, { flex: 1 }]} numberOfLines={1}>{p.nickname}</Text>
-                  <View style={[styles.badge, { backgroundColor: st.bg }]}>
-                    <Text style={[styles.badgeText, { color: st.color }]}>{st.text}</Text>
-                  </View>
-                </View>
-                <Text style={styles.cardMeta} numberOfLines={1}>
-                  {cropZh(p.crop)}{p.planted_date ? ` · 种植 ${p.planted_date}` : ''}
-                  {p.last_record ? ` · 最近记录 ${p.last_record.date}` : ''}
-                </Text>
-                {p.last_record?.disease_label === 'diseased' ? (
-                  <Text style={styles.cardWarn} numberOfLines={1}>
-                    上次诊断：{p.last_record.disease_name || '发现病害'}
-                  </Text>
-                ) : null}
-              </View>
-              <Text style={styles.chevron}>›</Text>
-            </TapCard>
-            </FadeUp>
-          );
-        })}
+        {!loading && plants.length > 0 ? (
+          <FadeUp>
+            <GardenLawn
+              plants={plants}
+              isDesktop={isDesktop}
+              onOpenPlant={(id) => setDetailId(id)}
+            />
+          </FadeUp>
+        ) : null}
+
+        {!loading && plants.length > 0 ? (
+          <Text style={styles.lawnTip}>
+            {isDesktop
+              ? '把鼠标移到植株上看它的状态，点一下进档案'
+              : '点一下植株看它的状态'}
+          </Text>
+        ) : null}
       </ScrollView>
 
       <TouchableOpacity style={styles.fab} onPress={openAdd}>
@@ -277,28 +247,11 @@ const styles = StyleSheet.create({
   user: { fontSize: 13, color: C.sub, marginTop: 2 },
   headerMascot: { width: 68, height: 68, marginLeft: 8 },
   list: { padding: 16, paddingBottom: 90 },
-  tip: { color: C.sub, textAlign: 'center', marginVertical: 20 },
   empty: { alignItems: 'center', marginTop: 60 },
   emptyEmoji: { fontSize: 56 },
   emptyText: { color: C.sub, marginTop: 12, textAlign: 'center', paddingHorizontal: 30 },
-  card: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-    borderRadius: 16, padding: 12,
-  },
-  cardPhoto: { width: 52, height: 52, borderRadius: 14, marginRight: 12 },
+  lawnTip: { fontSize: 11.5, color: C.sub, textAlign: 'center', marginTop: 14 },
   modalHint: { fontSize: 12, color: C.sub, marginBottom: 6 },
-  avatarBox: {
-    width: 52, height: 52, borderRadius: 14, backgroundColor: '#E9F1DC',
-    alignItems: 'center', justifyContent: 'center', marginRight: 12,
-  },
-  cardEmoji: { fontSize: 30 },
-  cardBody: { flex: 1 },
-  cardName: { fontSize: 15, fontWeight: '700', color: C.text },
-  cardMeta: { fontSize: 12, color: C.sub, marginTop: 3 },
-  cardWarn: { fontSize: 12, color: '#C2410C', marginTop: 3 },
-  badge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  chevron: { color: C.gray, fontSize: 20, marginLeft: 6 },
   error: { color: C.red, fontSize: 13, paddingHorizontal: 16 },
   fab: {
     position: 'absolute', right: 20, bottom: 20, width: 56, height: 56, borderRadius: 28,
