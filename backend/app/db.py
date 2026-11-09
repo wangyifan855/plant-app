@@ -1166,16 +1166,6 @@ def seed_demo_garden(user_id: int) -> None:
         {"label": "healthy", "name": "Healthy", "confidence": 0.97}, None,
     )
 
-    # 3) 薄荷：上次记录在 10 天前 → 触发「该拍照了」提醒
-    pid = add_plant(user_id, "窗台薄荷", "Mint", "🌿", d(45), "厨房窗台")
-    tid = f"demo-mint-{user_id}"
-    create_track(tid, "窗台薄荷", "Mint")
-    set_plant_track(pid, user_id, tid)
-    add_track_record(
-        tid, d(10), {"label": "薄荷 (Mint)"},
-        {"label": "healthy", "name": "Healthy", "confidence": 0.95}, None,
-    )
-
 
 def seed_if_empty() -> None:
     """演示种子：空库时发 2 条帖子 + 1 条追踪记录，盖过空列表（文档 §12）。"""
