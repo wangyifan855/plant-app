@@ -52,10 +52,16 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
 
   // 背景图按容器宽度等比显示
   const imgH = w * BG_AR;
-  const sky = imgH * SKY_RATIO;
-  const spacing = isDesktop ? 140 : 100;
-  const plantH = isDesktop ? 120 : 96;
-  const rowH = plantH + 26;
+  const skyH = imgH * SKY_RATIO;
+  // 宽屏上按比例算出来的图很高（520 宽 → 900 多高），一屏只看得到天空。
+  // 所以桌面端把图片往上顶，只留一小条天空，让草地尽快进画面。
+  const skyTop = isDesktop ? Math.min(skyH, 130) : skyH;
+  const bgOffset = skyH - skyTop;
+  // 株距要比植物宽度宽出一截，不然像挤在一起 —— 之前株距 100、苹果树宽 92，
+  // 横向只剩 8px 空隙，纵向行距 26，确实太贴了。
+  const spacing = isDesktop ? 140 : 110;
+  const plantH = isDesktop ? 110 : 82;
+  const rowH = plantH + (isDesktop ? 58 : 42);
 
   // 植物按「金字塔」摆：行数由上到下逐行加宽，每行水平居中。
   // 1 居中 / 2 错开 / 3 = 1+2 / 4 = 1+2+1 / 5 = 2+3 / 6 = 1+2+3 / 7 = 2+3+2。
@@ -71,10 +77,10 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
     const blockH = rowCounts.reduce((s, r) => s + r.length * rowH, 0)
       + Math.max(0, chunks.length - 1) * GROUP_GAP;
     // 底部要给悬浮「+」按钮让地方，不然最下面一排会被它压住
-    const usableH = imgH - sky - FAB_SPACE;
+    const usableH = imgH - bgOffset - skyTop - FAB_SPACE;
     const startY = blockH <= usableH - PAD * 2
-      ? sky + (usableH - blockH) / 2
-      : sky;
+      ? skyTop + (usableH - blockH) / 2
+      : skyTop;
 
     const centerX = w / 2;
     const out = [];
@@ -92,10 +98,11 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
           const plant = cropPlant(p.crop) || UNKNOWN_PLANT;
           const ratio = plant.ratio;
 
-          // 先按统一高度算宽，太宽的（草莓那种趴地植物）改用宽度约束、自然变矮
+          // 先按统一高度算宽，太宽的（草莓那种趴地植物）改用宽度约束、自然变矮。
+          // 上限收在株距的 0.84，保证左右还留着空隙
           let ph = plantH;
           let pw = ph * ratio;
-          const maxW = spacing * 0.94;
+          const maxW = spacing * 0.84;
           if (pw > maxW) { pw = maxW; ph = pw / ratio; }
 
           // 只有两株时上下错开，做成「一左上、一右下」，不然会竖着叠成一条线
@@ -119,8 +126,10 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
       baseTop += counts.length * rowH + GROUP_GAP;
     });
 
-    return { laid: out, lawnH: Math.max(imgH, startY + blockH + PAD * 2) };
-  }, [plants, w, imgH, sky, spacing, plantH, rowH]);
+    // 手机端至少一整屏草坡；桌面端图片被上顶过，按植物实际需要的高度来
+    const floor = isDesktop ? 560 : imgH;
+    return { laid: out, lawnH: Math.max(floor, startY + blockH + PAD * 2) };
+  }, [plants, w, imgH, bgOffset, skyTop, isDesktop, spacing, plantH, rowH]);
 
   const showId = activeId != null ? activeId : hoverId;
   const cur = laid.find((x) => x.p.id === showId) || null;
@@ -137,12 +146,19 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
 
   return (
     <View
-      style={[styles.stage, { height: lawnH, maxWidth: isDesktop ? 620 : 900 }]}
+      style={[styles.stage, { height: lawnH, maxWidth: isDesktop ? 520 : 900 }]}
       onLayout={(e) => setW(e.nativeEvent.layout.width)}
     >
       {/* 草坡背景：天空 + 草地，植物只种在草坡那一段 */}
-      <Image source={GARDEN_BG} style={[styles.bg, { height: imgH }]} resizeMode="cover" />
-      {lawnH > imgH ? <View style={[styles.grassMore, { top: imgH - 2 }]} /> : null}
+      {/* 草坡背景：天空 + 草地，植物只种在草坡那一段。
+          桌面端图片会被往上顶一截（bgOffset），所以外面套一层裁剪容器。 */}
+      <View style={[styles.bgWrap, { height: lawnH }]}>
+        <Image
+          source={GARDEN_BG}
+          style={{ width: '100%', height: imgH, marginTop: -bgOffset }}
+          resizeMode="cover"
+        />
+      </View>
 
       {/* 点空白处收起气泡 */}
       <Pressable style={StyleSheet.absoluteFill} onPress={() => setActiveId(null)} />
@@ -218,15 +234,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     overflow: 'visible',
   },
-  bg: {
+  // 背景裁剪层：圆角 + overflow:hidden，桌面端靠它把图片上方裁掉一截
+  bgWrap: {
     position: 'absolute', top: 0, left: 0, right: 0,
-    borderTopLeftRadius: 22, borderTopRightRadius: 22,
-  },
-  // 植物比一屏草坡还多时，底部用图里的草色接上去
-  grassMore: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
+    borderRadius: 22, overflow: 'hidden',
+    // 植物多到超出图片高度时，底部露出的就是这层草色
     backgroundColor: GRASS,
-    borderBottomLeftRadius: 22, borderBottomRightRadius: 22,
   },
   plant: {
     position: 'absolute',
