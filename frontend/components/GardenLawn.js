@@ -8,7 +8,7 @@ import {
   View, Text, Image, Pressable, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import { C } from '../lib/theme';
-import { CROPS, cropEmoji, cropPlant } from '../lib/crops';
+import { CROPS, cropPlant, UNKNOWN_PLANT } from '../lib/crops';
 import { plantStatus } from '../lib/plantStatus';
 
 const GARDEN_BG = require('../assets/garden_bg.jpg');
@@ -18,7 +18,6 @@ const GRASS = '#BFD264';    // 图底部的草色，植物多了往下接色
 
 const PAD = 14;             // 左右留白
 const TIP_W = 200;          // 气泡宽
-const EXTRA_FALLBACK_W = 0.9;
 
 // 确定性伪随机：同一个 id 永远得到同一个值
 function rand(seed) {
@@ -58,8 +57,9 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
     const col = i % perRow;
     const row = Math.floor(i / perRow);
     const seed = (typeof p.id === 'number' ? p.id : i + 1) + 1;
-    const plant = cropPlant(p.crop);
-    const ratio = plant ? plant.ratio : EXTRA_FALLBACK_W;
+    // 不在 14 种里的（比如 demo 的「窗台薄荷」）用通用幼苗顶上，别让花园里冒出个 emoji
+    const plant = cropPlant(p.crop) || UNKNOWN_PLANT;
+    const ratio = plant.ratio;
 
     // 先按统一高度算宽，太宽的（草莓那种趴地植物）改用宽度约束、自然变矮
     let ph = plantH;
@@ -122,12 +122,7 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
               on && styles.plantOn,
             ]}
           >
-            {plant ? (
-              <Image source={plant.img} style={{ width: pw, height: ph }} resizeMode="contain" />
-            ) : (
-              // 不在 14 种作物里的（比如自己写的「薄荷」）回退成 emoji
-              <Text style={styles.fallbackEmoji}>{cropEmoji(p.crop)}</Text>
-            )}
+            <Image source={plant.img} style={{ width: pw, height: ph }} resizeMode="contain" />
             {p.last_record?.disease_label === 'diseased' ? (
               <View style={styles.warnDot} pointerEvents="none" />
             ) : null}
@@ -196,7 +191,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   plantOn: { transform: [{ scale: 1.06 }], zIndex: 5 },
-  fallbackEmoji: { fontSize: 40, lineHeight: 46 },
   warnDot: {
     position: 'absolute', top: 2, right: 2,
     width: 10, height: 10, borderRadius: 5,

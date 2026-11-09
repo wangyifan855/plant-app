@@ -54,3 +54,10 @@ export const CROP_PLANT = {
 export function cropPlant(en) {
   return CROP_PLANT[en] || null;
 }
+
+// 通用幼苗：不在 14 种里、或者没选品种的植物用这张，
+// 总比在花园里杵一个 emoji 强（emoji 和这批插画不是一个画风）。
+export const UNKNOWN_PLANT = {
+  img: require('../assets/plants/unknown.png'),
+  ratio: 200 / 260,
+};
