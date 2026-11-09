@@ -21,16 +21,17 @@ const TIP_W = 200;          // 气泡宽
 const CHUNK = 7;            // 一块地最多 7 株
 const GROUP_GAP = 26;       // 两块地之间留的空
 const FAB_SPACE = 90;       // 右下角悬浮「+」占的高度，植物别种到那儿去
+const MAX_PER_ROW = 2;      // 一行最多几株 —— 植物要够大，一行放 3 个就只能各占 120px
 
-// 每行几个：金字塔式堆叠，上窄下宽，最后一行收一点
+// 每行几个：金字塔式堆叠，上窄下宽
 const LAYOUTS = {
   1: [1],
-  2: [1, 1],    // 这两株会错开成「一左上、一右下」
+  2: [1, 1],      // 这两株会错开成「一左上、一右下」
   3: [1, 2],
-  4: [1, 2, 1],
-  5: [2, 3],
-  6: [1, 2, 3],
-  7: [2, 3, 2],
+  4: [2, 2],
+  5: [1, 2, 2],
+  6: [2, 2, 2],
+  7: [1, 2, 2, 2],
 };
 
 // 确定性伪随机：同一个 id 永远得到同一个值
@@ -57,11 +58,14 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
   // 所以桌面端把图片往上顶，只留一小条天空，让草地尽快进画面。
   const skyTop = isDesktop ? Math.min(skyH, 130) : skyH;
   const bgOffset = skyH - skyTop;
-  // 株距要比植物宽度宽出一截，不然像挤在一起 —— 之前株距 100、苹果树宽 92，
-  // 横向只剩 8px 空隙，纵向行距 26，确实太贴了。
-  const spacing = isDesktop ? 140 : 110;
-  const plantH = isDesktop ? 110 : 82;
-  const rowH = plantH + (isDesktop ? 58 : 42);
+  // 株距按「一行最多 2 株」来分：每格 = 可用宽度 / 2，植物占格子的八成，
+  // 剩下两成当间隙。之前一行放 3 个，每株只能 120px 宽，怎么调都显小。
+  const slotW = Math.max(1, (w - PAD * 2) / MAX_PER_ROW);
+  const spacing = slotW;
+  // 桌面端要额外限高：网页缩放到 1.33 倍后一屏的 CSS 高度只有 677，
+  // 按比例算出来的 207 会把第二排顶出视口。手机上没这个问题。
+  const plantH = isDesktop ? Math.min(slotW * 0.84, 130) : slotW * 0.84;
+  const rowH = plantH * 1.24;
 
   // 植物按「金字塔」摆：行数由上到下逐行加宽，每行水平居中。
   // 1 居中 / 2 错开 / 3 = 1+2 / 4 = 1+2+1 / 5 = 2+3 / 6 = 1+2+3 / 7 = 2+3+2。
@@ -78,9 +82,10 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
       + Math.max(0, chunks.length - 1) * GROUP_GAP;
     // 底部要给悬浮「+」按钮让地方，不然最下面一排会被它压住
     const usableH = imgH - bgOffset - skyTop - FAB_SPACE;
-    const startY = blockH <= usableH - PAD * 2
-      ? skyTop + (usableH - blockH) / 2
-      : skyTop;
+    // 桌面端贴顶往下排（天空已经只剩一条，再居中会把下面顶出去）；手机端在草地里居中
+    const startY = isDesktop
+      ? skyTop + 10
+      : (blockH <= usableH - PAD * 2 ? skyTop + (usableH - blockH) / 2 : skyTop);
 
     const centerX = w / 2;
     const out = [];
@@ -102,7 +107,7 @@ export default function GardenLawn({ plants, isDesktop, onOpenPlant }) {
           // 上限收在株距的 0.84，保证左右还留着空隙
           let ph = plantH;
           let pw = ph * ratio;
-          const maxW = spacing * 0.84;
+          const maxW = spacing * 0.92;
           if (pw > maxW) { pw = maxW; ph = pw / ratio; }
 
           // 只有两株时上下错开，做成「一左上、一右下」，不然会竖着叠成一条线
