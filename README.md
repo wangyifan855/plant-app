@@ -24,61 +24,25 @@
 
 ## 界面
 
-手机端 390×844，桌面端 1440×900。
+手机端 390×844，桌面端 1440×900。点击图片可看原图。
 
-**首页** —— 天气、花园健康度、今日待办、我的植物，右下角相机直达诊断。
+| 首页 | 诊断 | 完成待办 |
+|:---:|:---:|:---:|
+| ![首页](docs/screenshots/home.jpg) | ![诊断](docs/screenshots/identify.jpg) | ![完成待办的满屏点赞](docs/screenshots/todo_burst.jpg) |
+| **发现** | **我的花园** | **个人资料** |
+| ![发现](docs/screenshots/discover.jpg) | ![我的花园](docs/screenshots/garden.jpg) | ![个人资料](docs/screenshots/profile.jpg) |
+| **健康追踪** | **发笔记** | **帖子详情** |
+| ![健康追踪](docs/screenshots/track.jpg) | ![发笔记](docs/screenshots/compose.jpg) | ![帖子详情](docs/screenshots/post_detail.jpg) |
+| **作者管理** | **登录注册** | **编辑资料** |
+| ![帖子管理](docs/screenshots/post_actions.jpg) | ![登录](docs/screenshots/login.jpg) | ![编辑资料](docs/screenshots/edit_profile.jpg) |
 
-![首页](docs/screenshots/home.jpg)
+| 桌面端首页 | 桌面端花园 | 管理后台 |
+|:---:|:---:|:---:|
+| ![桌面端首页](docs/screenshots/pc_home.jpg) | ![桌面端花园](docs/screenshots/pc_garden.jpg) | ![管理后台](docs/screenshots/admin.jpg) |
 
-**今日任务** —— 待办清单按植物分组，勾掉一项会放满屏点赞：爱心、星星、大拇指、彩带从顶部错落飘落，约 6 秒自动散去。完成状态存在浏览器本地，刷新还在。
+首页是天气、花园健康度、今日待办和我的植物，右下角相机直达诊断。勾掉一项待办会放满屏点赞，爱心、星星、大拇指、彩带从顶部错落飘落，约 6 秒散去，完成状态存在浏览器本地。
 
-![完成待办的满屏点赞](docs/screenshots/todo_burst.jpg)
-
-**诊断** —— 拍照 / 相册、识别、最近一次结果、常见问题快捷入口。
-
-![诊断](docs/screenshots/identify.jpg)
-
-**发现** —— 双列瀑布流，封面统一竖版 3:4。
-
-![发现](docs/screenshots/discover.jpg)
-
-**我的花园** —— 草坡上按品种种着，金字塔式排布，最多 7 株一块地。
-
-![我的花园](docs/screenshots/garden.jpg)
-
-**个人资料** —— 头像、统计、帖子 / 草稿 / 收藏 / 点赞 / 评论五个分栏。
-
-![个人资料](docs/screenshots/profile.jpg)
-
-**健康追踪** —— 状态判定、月历打卡、历次记录，趋势曲线在下方。
-
-![健康追踪](docs/screenshots/track.jpg)
-
-**发笔记** —— 多图、标签、可见范围，最下面标明发布身份。
-
-![发笔记](docs/screenshots/compose.jpg)
-
-**帖子详情与作者管理** —— 右上角「⋯」是作者自己的编辑 / 改可见范围 / 删除。
-
-![帖子详情](docs/screenshots/post_detail.jpg)
-![帖子管理](docs/screenshots/post_actions.jpg)
-
-**登录注册** —— 顶部「登录 | 注册」切换，也可以直接进演示花园。
-
-![登录](docs/screenshots/login.jpg)
-
-**编辑资料** —— 六款 Avo 造型任选或上传照片，底部是修改密码入口。
-
-![编辑资料](docs/screenshots/edit_profile.jpg)
-
-**桌面端** —— 宽度 ≥1024 时左侧改成导航栏，首页变两栏。
-
-![桌面端首页](docs/screenshots/pc_home.jpg)
-![桌面端花园](docs/screenshots/pc_garden.jpg)
-
-**管理后台**
-
-![管理后台](docs/screenshots/admin.jpg)
+花园是种着 14 种作物插画的草坡，植株按金字塔排布，最多 7 株一块地；鼠标悬停（手机上是点击）能看到它叫什么、长什么样、健康状况和种植日期。发现页是双列瀑布流，封面统一竖版 3:4；帖子详情页右上角「⋯」是作者自己的编辑、改可见范围和删除。编辑资料里能换六款 Avo 造型或上传照片，底部是修改密码入口。桌面端宽度 ≥1024 时换成左侧导航，首页变两栏。
 
 ## 技术选型
 
