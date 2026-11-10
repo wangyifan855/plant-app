@@ -126,6 +126,14 @@ function getTargets() {
     await realClick(clickSeq[i], `CLICK#${i + 1}`);
   }
 
+  // EXTRA_WAIT=毫秒：点击完成后再额外等一会儿才截图。
+  // 用来抓动画中间态（比如勾选待办后的满屏点赞，realClick 自带 1200ms 还不够飘满屏）。
+  if (process.env.EXTRA_WAIT) {
+    const ms = Number(process.env.EXTRA_WAIT) || 0;
+    console.log(`EXTRA_WAIT ${ms}ms`);
+    await new Promise((res) => setTimeout(res, ms));
+  }
+
   // REAL_HOVER='x,y' 或 '文本'：把鼠标移到目标上但不点击，用来截 hover 态
   if (process.env.REAL_HOVER) {
     const spec = process.env.REAL_HOVER;
