@@ -24,7 +24,7 @@
 
 ## 界面
 
-手机端 390×844，桌面端 1440×900。点击图片可看原图。
+手机端 390×844。点击图片可看原图。
 
 | 首页 | 诊断 | 完成待办 |
 |:---:|:---:|:---:|
@@ -35,10 +35,6 @@
 | ![健康追踪](docs/screenshots/track.jpg) | ![发笔记](docs/screenshots/compose.jpg) | ![帖子详情](docs/screenshots/post_detail.jpg) |
 | **作者管理** | **登录注册** | **编辑资料** |
 | ![帖子管理](docs/screenshots/post_actions.jpg) | ![登录](docs/screenshots/login.jpg) | ![编辑资料](docs/screenshots/edit_profile.jpg) |
-
-| 桌面端首页 | 桌面端花园 | 管理后台 |
-|:---:|:---:|:---:|
-| ![桌面端首页](docs/screenshots/pc_home.jpg) | ![桌面端花园](docs/screenshots/pc_garden.jpg) | ![管理后台](docs/screenshots/admin.jpg) |
 
 首页是天气、花园健康度、今日待办和我的植物，右下角相机直达诊断。勾掉一项待办会放满屏点赞，爱心、星星、大拇指、彩带从顶部错落飘落，约 6 秒散去，完成状态存在浏览器本地。
 
