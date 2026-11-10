@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, Image, TouchableOpacity, TextInput, ScrollView,
   ActivityIndicator, Alert, StyleSheet,
@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { compressImage, isLowQuality } from '../lib/compress';
 import { analyze } from '../lib/api';
 import { TIERS } from '../lib/tiers';
+import { COMBO_NOTES } from '../lib/varieties';
 import VarietyPicker from '../components/VarietyPicker';
 
 const ICON_CAM = require('../assets/icon_camera.png');
@@ -18,7 +19,7 @@ const MATERIALS = [
   { key: 'rootstock', title: '砧木', tip: '下面带根的植株' },
 ];
 
-export default function AnalyzeScreen() {
+export default function AnalyzeScreen({ prefill }) {
   const [images, setImages] = useState({ scion: null, rootstock: null });
   const [varieties, setVarieties] = useState({ scion: '', rootstock: '' });
   const [temperature, setTemperature] = useState('');
@@ -26,6 +27,15 @@ export default function AnalyzeScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+
+  // 诊断页的砧木方案卡片带参进来：接穗/砧木直接预填，用户改照片就能算
+  useEffect(() => {
+    if (!prefill) return;
+    setVarieties((p) => ({
+      scion: prefill.scion || p.scion,
+      rootstock: prefill.rootstock || p.rootstock,
+    }));
+  }, [prefill]);
 
   async function pick(slot, source) {
     const opts = {
@@ -117,6 +127,7 @@ export default function AnalyzeScreen() {
             label={`${m.title}品种（选填）`}
             value={varieties[m.key]}
             onChange={(v) => setVarieties((p) => ({ ...p, [m.key]: v }))}
+            kinds={m.key === 'scion' ? 'crop' : 'all'}
           />
           <Text style={styles.varietyHint}>
             不知道品种就留空，系统会从照片自动识别；手填的优先于识别结果
@@ -223,10 +234,33 @@ function ResultView({ result, onReset }) {
             <Text style={styles.scoreUnit}>/ 100{result.compatibility.known ? '' : '（品种未收录，无法判断）'}</Text>
           </View>
           {result.compatibility.breakdown ? (
-            <Text style={styles.breakdown}>
-              科属 {result.compatibility.breakdown.family_genus} + 温度 {result.compatibility.breakdown.temperature} + 土壤 {result.compatibility.breakdown.soil}
-            </Text>
+            <>
+              <Text style={styles.breakdown}>
+                科属 {result.compatibility.breakdown.family_genus} + 温度 {result.compatibility.breakdown.temperature} + 土壤 {result.compatibility.breakdown.soil}
+                {result.compatibility.breakdown.rootstock_affinity
+                  ? ` + 砧木亲和 ${result.compatibility.breakdown.rootstock_affinity}`
+                  : ''}
+              </Text>
+              {result.compatibility.breakdown.rootstock_affinity ? (
+                <Text style={styles.affinityNote}>
+                  砧木亲和：这对组合是生产上验证过的抗病砧木搭配，属差不再扣分
+                </Text>
+              ) : null}
+            </>
           ) : null}
+
+          {/* 同科跨属的组合知识卡：兼容性中等但生产上真能接，讲清楚它妙在哪 */}
+          {(() => {
+            const key = `${result.varieties?.scion?.name}×${result.varieties?.rootstock?.name}`;
+            const note = COMBO_NOTES[key];
+            if (!note) return null;
+            return (
+              <View style={styles.comboCard}>
+                <Text style={styles.comboTitle}>这个组合有意思</Text>
+                <Text style={styles.comboBody}>{note}</Text>
+              </View>
+            );
+          })()}
         </>
       )}
 
@@ -328,4 +362,11 @@ const styles = StyleSheet.create({
   scoreNum: { fontSize: 36, fontWeight: '800', color: '#2e7d32' },
   scoreUnit: { fontSize: 14, color: '#666', marginLeft: 6 },
   breakdown: { marginTop: 4, fontSize: 14, color: '#666' },
+  affinityNote: { marginTop: 4, fontSize: 12.5, color: '#2e7d32', lineHeight: 18 },
+  comboCard: {
+    backgroundColor: '#FFF8E1', borderRadius: 12, padding: 14,
+    marginTop: 14, borderWidth: 1, borderColor: '#F0DFA8',
+  },
+  comboTitle: { fontSize: 14, fontWeight: '800', color: '#8A6D1A', marginBottom: 6 },
+  comboBody: { fontSize: 13, lineHeight: 20, color: '#5A4A18' },
 });

@@ -172,6 +172,8 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [restoring, setRestoring] = useState(true);
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
+  // 诊断页砧木方案卡片带参进入嫁接初筛：{scion, rootstock}，关闭弹层时清掉
+  const [analyzePrefill, setAnalyzePrefill] = useState(null);
   const [trackId, setTrackId] = useState(null);
   const [trackOpen, setTrackOpen] = useState(false);
   const [trackReturnPlant, setTrackReturnPlant] = useState(null); // 追踪是从哪株植物的档案进来的
@@ -297,6 +299,7 @@ export default function App() {
               onGoProfile={() => setTab('profile')}
               linkedPlant={linkedPlant}
               onOpenPlant={openPlant}
+              onGotoGraft={(p) => { setAnalyzePrefill(p); setAnalyzeOpen(true); }}
             />
           )}
           {tab === 'discover' && (
@@ -333,18 +336,24 @@ export default function App() {
         {!isDesktop && <TabBar tab={tab} onSelect={switchTab} />}
       </View>
 
-      {/* 嫁接初筛（原「嫁接」tab，弹层保留） */}
-      <Modal visible={analyzeOpen} animationType="slide" onRequestClose={() => setAnalyzeOpen(false)}>
+      {/* 嫁接初筛（原「嫁接」tab，弹层保留）；诊断页砧木方案可带参预填进来 */}
+      <Modal
+        visible={analyzeOpen}
+        animationType="slide"
+        onRequestClose={() => { setAnalyzeOpen(false); setAnalyzePrefill(null); }}
+      >
         <View style={styles.modalWrap}>
           <View style={styles.modalInner}>
             <View style={[styles.modalHead, isDesktop && styles.modalHeadPc]}>
-              <TouchableOpacity onPress={() => setAnalyzeOpen(false)}>
+              <TouchableOpacity
+                onPress={() => { setAnalyzeOpen(false); setAnalyzePrefill(null); }}
+              >
                 <Text style={styles.modalBack}>‹ 关闭</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>嫁接初筛</Text>
               <View style={{ width: 70 }} />
             </View>
-            <AnalyzeScreen />
+            <AnalyzeScreen prefill={analyzePrefill} />
           </View>
         </View>
       </Modal>

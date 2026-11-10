@@ -26,6 +26,7 @@ class CompatibilityBreakdown(BaseModel):
     family_genus: int
     temperature: int
     soil: int
+    rootstock_affinity: int = 0   # 生产验证的抗病砧木组合加成（砧木在接穗 rootstocks 列表内）
 
 
 class CompatibilityResult(BaseModel):
@@ -98,6 +99,22 @@ class IdentifyResponse(BaseModel):
     decision: SimpleDecision
     candidates: list[Candidate] = []   # 仅低置信度分支返回
     linked_plant: LinkedPlant | None = None  # 关联到某株植物时返回，用来提示"已记录"
+    graft_hint: "GraftHint | None" = None    # 命中土传/维管束病害时给出的砧木嫁接方案
+
+
+# ---- 识别 → 嫁接联动：土传病害的砧木恢复方案 ----
+class GraftStock(BaseModel):
+    name: str          # 砧木品种名（与嫁接页下拉一致）
+    note: str = ""     # 抗性与农艺说明
+
+
+class GraftHint(BaseModel):
+    crop: str          # 接穗作物中文名
+    reason: str        # 为什么建议砧木嫁接（文案）
+    rootstocks: list[GraftStock] = []
+
+
+IdentifyResponse.model_rebuild()
 
 
 # ---- 恢复追踪（recovery_track） ----

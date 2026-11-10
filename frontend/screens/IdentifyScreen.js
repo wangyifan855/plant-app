@@ -29,7 +29,7 @@ function diagBadge(d) {
 }
 
 // 识别 tab：单图 → 物种 + 病害 + 建议文案（task_type=plant_identify）+ 最近诊断
-export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenPlant }) {
+export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenPlant, onGotoGraft }) {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -123,6 +123,7 @@ export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenP
         user={user}
         linkedPlant={linkedPlant}
         onOpenPlant={onOpenPlant}
+        onGotoGraft={onGotoGraft}
         onReset={() => { setResult(null); setImage(null); loadRecent(); }}
       />
     );
@@ -373,7 +374,7 @@ function DiagDetailBody({ d }) {
   );
 }
 
-function ResultView({ result, image, user, onReset, linkedPlant, onOpenPlant }) {
+function ResultView({ result, image, user, onReset, linkedPlant, onOpenPlant, onGotoGraft }) {
   const d = result.disease;
   const stateText = d.label === 'healthy' ? '健康' : d.label === 'diseased' ? '疑似病害' : '不在识别范围';
   const stateColor = d.label === 'healthy' ? C.greenDark : d.label === 'diseased' ? '#C2410C' : '#5F5E5A';
@@ -428,6 +429,36 @@ function ResultView({ result, image, user, onReset, linkedPlant, onOpenPlant }) 
         <Text style={styles.suggestTitle}>处理建议</Text>
         <Text style={styles.suggestBody}>{result.suggestion}</Text>
       </View>
+
+      {/* 识别 → 嫁接联动：土传/维管束病害给出砧木恢复方案，一键带参进嫁接初筛 */}
+      {result.graft_hint && onGotoGraft ? (
+        <View style={styles.graftHintCard}>
+          <Text style={styles.graftHintTitle}>🥑 换个思路：砧木嫁接方案</Text>
+          <Text style={styles.graftHintBody}>{result.graft_hint.reason}</Text>
+          <View style={styles.graftHintStocks}>
+            {result.graft_hint.rootstocks.map((s) => (
+              <View key={s.name} style={styles.graftHintStock}>
+                <Text style={styles.graftHintStockName}>{s.name}</Text>
+                <Text style={styles.graftHintStockNote}>{s.note}</Text>
+              </View>
+            ))}
+          </View>
+          <TouchableOpacity
+            style={styles.graftHintBtn}
+            onPress={() => onGotoGraft({
+              scion: result.graft_hint.crop,
+              rootstock: result.graft_hint.rootstocks[0]?.name || '',
+            })}
+          >
+            <Text style={styles.graftHintBtnText}>
+              带「{result.graft_hint.crop} × {result.graft_hint.rootstocks[0]?.name}」去试算兼容性 ›
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.graftHintFine}>
+            砧木已预填进嫁接初筛，拍两张照片即可出评分；砧木可在那页换选
+          </Text>
+        </View>
+      ) : null}
 
       {/* 关联了植物：说明已经写进它的追踪，不用再手动加花园 */}
       {linked ? (
@@ -498,6 +529,26 @@ const styles = StyleSheet.create({
   suggestionCard: { backgroundColor: C.card, borderRadius: 16, padding: 14 },
   suggestTitle: { fontSize: 15, fontWeight: '800', color: C.greenDark, marginBottom: 6 },
   suggestBody: { fontSize: 14, lineHeight: 22, color: C.text },
+  // 识别 → 嫁接联动卡片：土传病害的砧木方案
+  graftHintCard: {
+    backgroundColor: '#EFF7E8', borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: '#CFE6B8', marginTop: 12,
+  },
+  graftHintTitle: { fontSize: 15, fontWeight: '800', color: C.greenDark, marginBottom: 8 },
+  graftHintBody: { fontSize: 13.5, lineHeight: 21, color: C.text },
+  graftHintStocks: { marginTop: 10, gap: 8 },
+  graftHintStock: {
+    backgroundColor: '#fff', borderRadius: 10, padding: 10,
+    borderWidth: 1, borderColor: '#DCEBCE',
+  },
+  graftHintStockName: { fontSize: 13.5, fontWeight: '800', color: C.greenDark },
+  graftHintStockNote: { fontSize: 12, lineHeight: 17, color: C.sub, marginTop: 3 },
+  graftHintBtn: {
+    marginTop: 12, backgroundColor: C.greenDark, borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  graftHintBtnText: { color: '#fff', fontSize: 13.5, fontWeight: '800' },
+  graftHintFine: { fontSize: 11, color: C.sub, marginTop: 8, lineHeight: 16 },
   candTitle: { fontSize: 13, fontWeight: '800', color: '#ef6c00', marginBottom: 4 },
   candLine: { fontSize: 13, lineHeight: 20, color: C.text },
   recentHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 24, marginBottom: 10 },

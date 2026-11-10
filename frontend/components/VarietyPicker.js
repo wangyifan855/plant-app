@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { getVarietyNames } from '../lib/varieties';
+import { getVarietyNames, rootstockLabel, getVarietyMeta } from '../lib/varieties';
 
 // 品种选择：内置列表支持搜索过滤（A2.1）；也可切换为手动输入未收录品种（A2.2）。
-export default function VarietyPicker({ label, value, onChange }) {
+// kinds='crop' 只显示栽培品种（当接穗用）；'all' 连嫁接砧木一起显示（chip 带 ·砧 标记）。
+export default function VarietyPicker({ label, value, onChange, kinds = 'all' }) {
   const [manual, setManual] = useState(false);
   const [filter, setFilter] = useState('');
-  const names = getVarietyNames();
+  // 砧木模式下砧木排最前（选砧木时九成是奔着专用砧木去的，别让人划过 14 种作物）
+  const entries = getVarietyNames()
+    .filter((n) => (kinds === 'crop' ? getVarietyMeta(n)?.role !== 'rootstock' : true))
+    .map((n) => ({ name: n, display: rootstockLabel(n), isStock: getVarietyMeta(n)?.role === 'rootstock' }))
+    .sort((a, b) => (kinds === 'all' ? (b.isStock ? 1 : 0) - (a.isStock ? 1 : 0) : 0));
 
-  const filtered = names.filter((n) => n.includes(filter.trim()));
+  const filtered = entries.filter((e) => e.name.includes(filter.trim()));
 
   if (manual) {
     return (
@@ -37,13 +42,15 @@ export default function VarietyPicker({ label, value, onChange }) {
         onChangeText={setFilter}
       />
       <ScrollView horizontal style={styles.chips} showsHorizontalScrollIndicator={false}>
-        {filtered.map((n) => (
+        {filtered.map((e) => (
           <TouchableOpacity
-            key={n}
-            style={[styles.chip, value === n && styles.chipActive]}
-            onPress={() => onChange(n)}
+            key={e.name}
+            style={[styles.chip, value === e.name && styles.chipActive]}
+            onPress={() => onChange(e.name)}
           >
-            <Text style={[styles.chipText, value === n && styles.chipTextActive]}>{n}</Text>
+            <Text style={[styles.chipText, value === e.name && styles.chipTextActive]}>
+              {e.display}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

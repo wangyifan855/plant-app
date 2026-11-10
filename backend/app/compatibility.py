@@ -60,10 +60,24 @@ def score_compatibility(scion: dict, rootstock: dict, temperature, soil_type) ->
 
     temp = _temp_score(scion["temp_range"], rootstock["temp_range"], temperature)
     soil = _soil_score(scion["soil_pref"], rootstock["soil_pref"], soil_type)
-    total = min(fg + temp + soil, 100)
+
+    # 生产上验证过的抗病砧木组合（接穗条目 rootstocks 列表）给亲和加成：
+    # 同科异属（如番茄×托鲁巴姆）按属差只给 40，但这类组合是标准农艺措施，
+    # 亲和性远好于同科随机配对，加 25 使评分与农艺事实一致。
+    bonus = 0
+    rootstock_name = rootstock.get("name")
+    if rootstock_name and rootstock_name in (scion.get("rootstocks") or []):
+        bonus = 25
+
+    total = min(fg + temp + soil + bonus, 100)
 
     return {
         "score": total,
         "known": True,
-        "breakdown": {"family_genus": fg, "temperature": temp, "soil": soil},
+        "breakdown": {
+            "family_genus": fg,
+            "temperature": temp,
+            "soil": soil,
+            "rootstock_affinity": bonus,
+        },
     }

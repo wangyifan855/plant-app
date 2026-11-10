@@ -27,6 +27,7 @@ from . import config, models, predict, compatibility, fusion, db
 from . import care as care_kb
 from . import weather as weather_provider
 from .advice import get_suggestion
+from . import advice
 
 app = FastAPI(title="Avo Plant Manager API", version="2.0")
 
@@ -64,6 +65,31 @@ async def _read_image(data: bytes, name: str) -> None:
         Image.open(io.BytesIO(data)).verify()
     except Exception:
         raise HTTPException(status_code=400, detail=f"{name}图片格式不支持，仅支持 jpg/png")
+
+
+def _build_graft_hint(crop_en: str | None, supported: bool, disease_name: str | None) -> models.GraftHint | None:
+    """识别 → 嫁接联动：土传/维管束病害给出抗病砧木方案。
+
+    触发条件：作物在品种库里、病害英文名命中土传族关键词（细菌性/萎蔫/根腐类）、
+    且该作物在生产上有推荐的抗病砧木。未满足任一条返回 None（前端不显示卡片）。
+    """
+    if not supported or not advice.is_soil_borne(disease_name):
+        return None
+    crop_zh = predict.crop_zh(crop_en) if crop_en else None
+    if not crop_zh:
+        return None
+    entry = VARIETIES_BY_NAME.get(_VARIETY_ALIAS.get(crop_zh, crop_zh))
+    if not entry or not (entry.get("rootstocks") or []):
+        return None
+    stocks = []
+    for name in entry["rootstocks"]:
+        stock = VARIETIES_BY_NAME.get(name)
+        if stock:
+            stocks.append(models.GraftStock(name=name, note=stock.get("note", "")))
+    if not stocks:
+        return None
+    return models.GraftHint(crop=entry["name"], reason=advice.graft_reason(entry["name"]),
+                            rootstocks=stocks)
 
 
 @app.get("/")
@@ -256,6 +282,10 @@ async def analyze(
                 label="低置信度识别" if result.get("low_confidence") else "识别结果",
             ),
             linked_plant=linked,
+            graft_hint=_build_graft_hint(
+                result.get("crop"), result.get("supported", False),
+                (result.get("disease") or {}).get("name"),
+            ),
         )
 
     # ---------- recovery_track：识别入库 + 趋势 ----------
