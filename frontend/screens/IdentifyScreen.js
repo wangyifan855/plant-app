@@ -22,6 +22,7 @@ function cropZh(en) {
 
 // 最近诊断行的状态徽章（对齐参考图：需关注 / 异常 / 健康）
 function diagBadge(d) {
+  if (d.disease_label === 'graft') return { text: '嫁接', color: '#2F5413', bg: '#EAF3DC' };
   if (d.disease_label === 'healthy') return { text: '健康', color: '#1E7B34', bg: '#E2F5E5' };
   if (d.disease_label === 'diseased' && d.low_confidence) return { text: '需关注', color: '#B45309', bg: '#FBF3D9' };
   if (d.disease_label === 'diseased') return { text: '异常', color: '#C2410C', bg: '#FDEBDD' };
@@ -57,12 +58,19 @@ export default function IdentifyScreen({ user, onGoProfile, linkedPlant, onOpenP
     if (!user) { onGoProfile && onGoProfile(); return; }
     try {
       const crop = d.crop || '';
+      // 嫁接筛查记录的组合名比「番茄 · 日期」更有辨识度
+      const isGraft = d.disease_label === 'graft';
+      const nickname = isGraft
+        ? `${(d.species_label || '嫁接组合').replace('（嫁接初筛）', '')} · ${fmtMonthDay(d.created_at) || '新记录'}`
+        : `${cropZh(crop) || '我的植物'} · ${fmtMonthDay(d.created_at) || '新记录'}`;
       await addPlant({
-        nickname: `${cropZh(crop) || '我的植物'} · ${fmtMonthDay(d.created_at) || '新记录'}`,
+        nickname,
         crop: crop || null,
         photoEmoji: cropEmoji(crop),
         plantedDate: null,
-        notes: `来自诊断：${d.disease_name || d.disease_label || ''}`,
+        notes: isGraft
+          ? `来自嫁接初筛：${d.disease_name || ''}（接穗照常参与病害识别）`
+          : `来自诊断：${d.disease_name || d.disease_label || ''}`,
       });
       setAddedIds((m) => ({ ...m, [d.id]: true }));
       loadRecent();

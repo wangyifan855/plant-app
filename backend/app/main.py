@@ -193,11 +193,33 @@ async def analyze(
         rv = VARIETIES_BY_NAME.get(_VARIETY_ALIAS.get(rv_used.name, rv_used.name)) if rv_used.name else None
         compat = compatibility.score_compatibility(sv, rv, temperature, soil_type)
         decision = fusion.decide(disease.model_dump(), compat, FUSION_RULES)
+
+        # 嫁接筛查也进「最近诊断」：列表与详情复用现有渲染，
+        # species 存「接穗 × 砧木」组合名，disease.name 存决策档位（建议嫁接/谨慎尝试…）
+        # crop 优先取手填/推断出的接穗品种（真模型偶发误判时，别让「手填番茄」显示成「· 葡萄」）
+        diag_crop = (sv.get("model_prefix") if sv and sv.get("model_prefix") else None) or sr.get("crop")
+        pair_label = f"{sv_used.name or '未定'} × {rv_used.name or '未定'}（嫁接初筛）"
+        try:
+            image_url = _save_diag_photo(sb)  # 存接穗照片，详情回看用
+        except HTTPException:
+            image_url = None
+        diag_id = db.log_diagnosis(
+            user["id"] if user else None,
+            diag_crop,
+            {"label": pair_label, "confidence": round(compat["score"] / 100, 2)},
+            {"label": "graft", "name": decision["label"], "confidence": round(compat["score"] / 100, 2)},
+            False,
+            suggestion=decision["explanation"],
+            candidates=[],
+            image_url=image_url,
+        )
+
         return models.GraftResponse(
             disease=disease,
             compatibility=models.CompatibilityResult(**compat),
             decision=models.DecisionResult(**decision),
             varieties=models.VarietiesUsedBlock(scion=sv_used, rootstock=rv_used),
+            diagnosis_id=diag_id if user else None,
         )
 
     # ---------- 单图三场景共用的识别 ----------

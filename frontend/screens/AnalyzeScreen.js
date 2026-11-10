@@ -5,8 +5,10 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { compressImage, isLowQuality } from '../lib/compress';
-import { analyze } from '../lib/api';
+import { analyze, addPlant } from '../lib/api';
 import { TIERS } from '../lib/tiers';
+import { CROPS, cropEmoji } from '../lib/crops';
+import { fmtMonthDay } from '../lib/time';
 import { COMBO_NOTES } from '../lib/varieties';
 import VarietyPicker from '../components/VarietyPicker';
 
@@ -19,7 +21,7 @@ const MATERIALS = [
   { key: 'rootstock', title: '砧木', tip: '下面带根的植株' },
 ];
 
-export default function AnalyzeScreen({ prefill }) {
+export default function AnalyzeScreen({ prefill, user }) {
   const [images, setImages] = useState({ scion: null, rootstock: null });
   const [varieties, setVarieties] = useState({ scion: '', rootstock: '' });
   const [temperature, setTemperature] = useState('');
@@ -195,9 +197,32 @@ function ImageSlot({ image, onCamera, onLibrary, onClear }) {
   );
 }
 
-function ResultView({ result, onReset }) {
+function ResultView({ result, onReset, user }) {
   const tier = TIERS[result.decision.code] || TIERS.cautious;
   const isRetake = result.decision.code === 'retake';
+  const [saved, setSaved] = useState(false);
+  const [saveTip, setSaveTip] = useState('');
+  // 组合名（接穗×砧木都定了才有）：用于最近诊断提示与「加进花园」
+  const pair = result.varieties?.scion?.name && result.varieties?.rootstock?.name
+    ? `${result.varieties.scion.name} × ${result.varieties.rootstock.name}`
+    : null;
+
+  async function saveToGarden() {
+    if (!user) { setSaveTip('请先在「个人资料」页登录'); return; }
+    try {
+      const scionZh = result.varieties?.scion?.name || '';
+      const crop = CROPS.find((c) => c.zh === scionZh)?.en || null;
+      await addPlant({
+        nickname: `${pair} · ${fmtMonthDay(new Date().toISOString())}`,
+        crop,
+        photoEmoji: cropEmoji(crop),
+        notes: `来自嫁接初筛：${result.decision.label}（${result.compatibility.score}/100）`,
+      });
+      setSaved(true);
+    } catch (e) {
+      setSaveTip(e.message || '保存失败，请重试');
+    }
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -263,6 +288,37 @@ function ResultView({ result, onReset }) {
           })()}
         </>
       )}
+
+      {/* 嫁接筛查已自动记入「最近诊断」（登录时后端落库） */}
+      {result.diagnosis_id ? (
+        <View style={styles.diagSavedCard}>
+          <Text style={styles.diagSavedText}>✅ 这次筛查已记入「最近诊断」</Text>
+          <Text style={styles.diagSavedSub}>在诊断页下方能回看组合与结论</Text>
+        </View>
+      ) : null}
+
+      {/* 可选：把这对组合作为一株植物记进花园，之后可以建追踪观察愈合 */}
+      {pair && !isRetake ? (
+        saved ? (
+          <View style={styles.gardenSavedCard}>
+            <Text style={styles.diagSavedText}>🌿 已加入我的花园</Text>
+            <Text style={styles.diagSavedSub}>
+              去「我的花园」找到它，点「拍照记录」建追踪，观察愈合情况
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.gardenCard}>
+            <Text style={styles.gardenTitle}>想把这对组合记进花园吗？</Text>
+            <Text style={styles.gardenSub}>
+              会创建一株「{pair}」，接穗品种照常参与病害识别；添加后可建健康追踪
+            </Text>
+            <TouchableOpacity style={styles.gardenBtn} onPress={saveToGarden}>
+              <Text style={styles.gardenBtnText}>添加到我的花园</Text>
+            </TouchableOpacity>
+            {saveTip ? <Text style={styles.gardenTip}>{saveTip}</Text> : null}
+          </View>
+        )
+      ) : null}
 
       <TouchableOpacity style={styles.analyzeBtn} onPress={onReset}>
         <Text style={styles.btnText}>重新分析</Text>
@@ -369,4 +425,22 @@ const styles = StyleSheet.create({
   },
   comboTitle: { fontSize: 14, fontWeight: '800', color: '#8A6D1A', marginBottom: 6 },
   comboBody: { fontSize: 13, lineHeight: 20, color: '#5A4A18' },
+  diagSavedCard: {
+    backgroundColor: '#EFF7E8', borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: '#CFE6B8', marginTop: 14,
+  },
+  diagSavedText: { fontSize: 13.5, fontWeight: '700', color: '#2e7d32' },
+  diagSavedSub: { fontSize: 12, color: '#666', marginTop: 4, lineHeight: 17 },
+  gardenCard: {
+    backgroundColor: '#fff', borderRadius: 12, padding: 14,
+    borderWidth: 1, borderColor: '#DFEDD0', marginTop: 12,
+  },
+  gardenTitle: { fontSize: 14, fontWeight: '800', color: '#1F3D10' },
+  gardenSub: { fontSize: 12.5, lineHeight: 18, color: '#666', marginTop: 5 },
+  gardenBtn: {
+    marginTop: 10, backgroundColor: '#2e7d32', borderRadius: 10,
+    paddingVertical: 10, alignItems: 'center',
+  },
+  gardenBtnText: { color: '#fff', fontSize: 13.5, fontWeight: '800' },
+  gardenTip: { fontSize: 12, color: '#c62828', marginTop: 8 },
 });

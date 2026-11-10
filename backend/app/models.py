@@ -59,6 +59,7 @@ class GraftResponse(BaseModel):
     compatibility: CompatibilityResult
     decision: DecisionResult
     varieties: VarietiesUsedBlock | None = None
+    diagnosis_id: int | None = None   # 已写入「最近诊断」的记录 id（未登录时为 None）
 
 
 # ---- 单图识别（plant_identify / graft_aftercare） ----

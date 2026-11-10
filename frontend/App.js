@@ -353,7 +353,7 @@ export default function App() {
               <Text style={styles.modalTitle}>嫁接初筛</Text>
               <View style={{ width: 70 }} />
             </View>
-            <AnalyzeScreen prefill={analyzePrefill} />
+            <AnalyzeScreen prefill={analyzePrefill} user={user} />
           </View>
         </View>
       </Modal>
